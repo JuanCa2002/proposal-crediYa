@@ -53,7 +53,6 @@ class ProposalRouterRestTest {
             .amount(3000.0)
             .userIdentificationNumber("123")
             .proposalLimit(4)
-            .stateId(1)
             .proposalTypeId(1L)
             .build();
 

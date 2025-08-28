@@ -32,11 +32,6 @@ public class CreateProposalDTO {
 
     @NotNull
     @Min(value = 1)
-    @Schema(description = "Unique identifier of the proposal state")
-    private Integer stateId;
-
-    @NotNull
-    @Min(value = 1)
     @Schema(description = "Unique identifier of the proposal type")
     private Long proposalTypeId;
 }

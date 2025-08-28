@@ -5,6 +5,10 @@ CREATE TABLE states (
     description VARCHAR(255) NOT NULL
 );
 
+-- Default value of States table
+INSERT INTO states (name, description)
+VALUES ("PENDIENTE_REVISION", "Pendiente de Revisión");
+
 --Table Proposal Types
 CREATE TABLE proposal_types (
     id BIGSERIAL PRIMARY KEY,

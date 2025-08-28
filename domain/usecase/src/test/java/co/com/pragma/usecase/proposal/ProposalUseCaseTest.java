@@ -9,8 +9,8 @@ import co.com.pragma.model.state.gateways.StateRepository;
 import co.com.pragma.model.user.User;
 import co.com.pragma.model.user.gateways.UserRepository;
 import co.com.pragma.usecase.proposal.constants.ProposalMessageConstants;
+import co.com.pragma.usecase.proposal.exception.InitialStateNotFound;
 import co.com.pragma.usecase.proposal.exception.ProposalTypeByIdNotFoundException;
-import co.com.pragma.usecase.proposal.exception.StateByIdNotFoundException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -84,7 +84,7 @@ public class ProposalUseCaseTest {
 
     @Test
     void shouldSaveProposal() {
-        when(stateRepository.findById(Mockito.anyInt()))
+        when(stateRepository.findByName(Mockito.anyString()))
                 .thenReturn(Mono.just(state));
 
         when(proposalTypeRepository.findById(Mockito.anyLong()))
@@ -104,17 +104,17 @@ public class ProposalUseCaseTest {
     }
 
     @Test
-    void shouldSaveProposal_StateByIdNotFoundException() {
-        when(stateRepository.findById(Mockito.anyInt()))
+    void shouldSaveProposal_InitialStateNotFoundException() {
+        when(stateRepository.findByName(Mockito.anyString()))
                 .thenReturn(Mono.empty());
 
         Mono<Proposal> result = proposalUseCase.saveProposal(proposal);
 
         StepVerifier.create(result)
                 .expectErrorMatches(throwable ->
-                        throwable instanceof StateByIdNotFoundException &&
+                        throwable instanceof InitialStateNotFound &&
                                 throwable.getMessage().equals(
-                                        MessageFormat.format(ProposalMessageConstants.STATE_NOT_FOUND, proposal.getStateId())
+                                        MessageFormat.format(ProposalMessageConstants.INITIAL_STATE_NOT_FOUND, "PENDIENTE_REVISION")
                                 )
                 )
                 .verify();
@@ -122,7 +122,7 @@ public class ProposalUseCaseTest {
 
     @Test
     void shouldSaveProposal_ProposalTypeByIdNotFoundException() {
-        when(stateRepository.findById(Mockito.anyInt()))
+        when(stateRepository.findByName(Mockito.anyString()))
                 .thenReturn(Mono.just(state));
 
         when(proposalTypeRepository.findById(Mockito.anyLong()))
