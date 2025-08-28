@@ -1,0 +1,16 @@
+package co.com.pragma.api.proposaltype.mapper;
+
+import co.com.pragma.api.proposaltype.dto.CreateProposalTypeDTO;
+import co.com.pragma.api.proposaltype.dto.ProposalTypeResponseDTO;
+import co.com.pragma.model.proposaltype.ProposalType;
+import org.mapstruct.Mapper;
+import org.mapstruct.NullValuePropertyMappingStrategy;
+import org.mapstruct.ReportingPolicy;
+
+@Mapper(componentModel = "spring", nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE,
+        unmappedTargetPolicy = ReportingPolicy.IGNORE)
+public interface ProposalTypeMapper {
+
+    ProposalType toDomain(CreateProposalTypeDTO request);
+    ProposalTypeResponseDTO toResponse(ProposalType domain);
+}
