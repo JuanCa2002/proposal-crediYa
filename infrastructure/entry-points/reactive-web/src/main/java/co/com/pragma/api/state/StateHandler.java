@@ -12,6 +12,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -26,11 +27,28 @@ import reactor.core.publisher.Mono;
 
 import java.util.List;
 
+@SecurityRequirement(name = "bearerAuth")
 @Tag(name = "States", description = "State management APIs")
 @ApiResponses(value = {
         @ApiResponse(
                 responseCode = "400",
                 description = "Validation data error",
+                content = @Content(
+                        mediaType = "application/json",
+                        schema = @Schema(implementation = ErrorResponse.class)
+                )
+        ),
+        @ApiResponse(
+                responseCode = "401",
+                description = "Unauthorized",
+                content = @Content(
+                        mediaType = "application/json",
+                        schema = @Schema(implementation = ErrorResponse.class)
+                )
+        ),
+        @ApiResponse(
+                responseCode = "403",
+                description = "Forbidden",
                 content = @Content(
                         mediaType = "application/json",
                         schema = @Schema(implementation = ErrorResponse.class)

@@ -10,4 +10,5 @@ dependencies {
     implementation 'org.hibernate.validator:hibernate-validator:8.0.0.Final'
     implementation 'org.springdoc:springdoc-openapi-starter-webflux-ui:2.6.0'
     implementation 'io.swagger.core.v3:swagger-annotations:2.2.21'
+    implementation 'org.springframework.boot:spring-boot-starter-security'
 }
