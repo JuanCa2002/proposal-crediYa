@@ -11,4 +11,5 @@ import lombok.*;
 public class ProposalPaginatedResponseDTO extends PaginatedResponseDTO<ProposalFilterResponseDTO> {
 
     private Long approvedOnes;
+    private Double sumRequestApprovedAmount;
 }

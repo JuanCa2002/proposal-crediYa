@@ -165,6 +165,7 @@ public class ProposalHandler {
             }
     )
     public Mono<ServerResponse> listenFilterByCriteria(ServerRequest serverRequest) {
+        log.info("[ProposalHandler] Getting query params");
         String initialDate = serverRequest
                 .queryParam("initialDate")
                 .orElse(null);
@@ -204,18 +205,20 @@ public class ProposalHandler {
         filter.setEmail(email);
         filter.setLimit(limit);
         filter.setOffset(offset);
+        log.info("[ProposalHandler] Starting search with the following filter {}", filter);
 
         int page = (offset / limit) + 1;
-
+        log.info("[ProposalHandler] Validating DTO errors");
         Errors errors = new BeanPropertyBindingResult(filter, ProposalFilterDTO.class.getName());
         validator.validate(filter, errors);
         if (errors.hasErrors()) {
             List<String> messageErrors = errors.getFieldErrors().stream()
                     .map(fe -> fe.getField() + " " + fe.getDefaultMessage())
                     .toList();
+            log.warn("[ProposalHandler] Validation failed for entered filter with errors: {}", messageErrors);
             return Mono.error(new FieldValidationException(messageErrors));
         }
-
+        log.info("[ProposalHandler] Finding records that match with the entered filter");
         return proposalUseCase.findByCriteria(
                         filter.getProposalTypeId(),
                         filter.getStateId(),
@@ -226,19 +229,26 @@ public class ProposalHandler {
                         filter.getLimit(),
                         filter.getOffset()
                 )
+                .doOnNext(domain -> log.info("[ProposalHandler] Mapping domain to filter response"))
                 .map(mapper::toResponseFilter)
                 .collectList()
                 .map(list -> {
+                    log.info("[ProposalHandler] Collecting information and sorting it into the response model");
                     ProposalPaginatedResponseDTO response = new ProposalPaginatedResponseDTO();
                     response.setData(list);
                     response.setTotalElements(BigInteger.valueOf(list.size()));
                     response.setApprovedOnes(list.stream()
                             .filter(filterResponse -> filterResponse.getState().contains("APROBADO"))
                             .count());
+                    response.setSumRequestApprovedAmount(list.stream()
+                            .filter(filterResponse -> filterResponse.getState().contains("APROBADO"))
+                            .mapToDouble(ProposalFilterResponseDTO::getAmount)
+                            .sum());
                     response.setPage(page);
                     return response;
                 })
-                .flatMap(response -> ServerResponse.ok().bodyValue(response));
+                .flatMap(response -> ServerResponse.ok().bodyValue(response))
+                .doOnError(error -> log.error("[ProposalHandler] Error while searching records with the entered filter", error));
     }
 
     @Operation(
@@ -261,15 +271,18 @@ public class ProposalHandler {
             }
     )
     public Mono<ServerResponse> listenUpdateStateProposal(ServerRequest serverRequest) {
+        log.info("[ProposalHandler] Getting query and path params");
         BigInteger id = new BigInteger(serverRequest.pathVariable("id"));
         Integer stateId = serverRequest
                 .queryParam("stateId")
                 .map(Integer::valueOf)
                 .orElse(null);
-
+        log.info("[ProposalHandler] Updating state of the proposal with the id {} with the state id {}", id, stateId);
         return proposalUseCase.updateState(id, stateId)
+                .doOnNext(proposal -> log.info("[ProposalHandler] Mapping domain to response"))
                 .map(mapper::toResponse)
-                .flatMap(response -> ServerResponse.ok().bodyValue(response));
+                .flatMap(response -> ServerResponse.ok().bodyValue(response))
+                .doOnError(error -> log.error("[ProposalHandler] Error while searching records with the entered filter", error));
     }
 
     private Mono<ValidateResponseDTO> searchTokenInformation(ServerRequest serverRequest) {
