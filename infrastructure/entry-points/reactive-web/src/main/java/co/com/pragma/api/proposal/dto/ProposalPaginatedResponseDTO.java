@@ -10,6 +10,5 @@ import lombok.*;
 @Builder
 public class ProposalPaginatedResponseDTO extends PaginatedResponseDTO<ProposalFilterResponseDTO> {
 
-    private Double sumDebt;
     private Long approvedOnes;
 }

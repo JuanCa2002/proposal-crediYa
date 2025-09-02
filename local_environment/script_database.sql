@@ -24,6 +24,7 @@ CREATE TABLE proposals (
     id BIGSERIAL PRIMARY KEY,
     amount NUMERIC(12,2) NOT NULL,
     base_salary NUMERIC(12,2) NOT NULL,
+    monthly_fee NUMERIC(12,2) NULL,
     proposal_limit INTEGER NOT NULL,
     limit_date DATE NOT NULL,
     creation_date DATE NOT NULL,

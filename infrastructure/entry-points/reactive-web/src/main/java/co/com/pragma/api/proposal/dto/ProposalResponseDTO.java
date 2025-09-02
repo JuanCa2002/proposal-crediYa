@@ -17,4 +17,6 @@ public class ProposalResponseDTO {
     private LocalDate limitDate;
     private LocalDate creationDate;
     private String email;
+    private String state;
+    private Double monthlyFee;
 }

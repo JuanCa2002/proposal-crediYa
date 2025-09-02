@@ -232,15 +232,43 @@ public class ProposalHandler {
                     ProposalPaginatedResponseDTO response = new ProposalPaginatedResponseDTO();
                     response.setData(list);
                     response.setTotalElements(BigInteger.valueOf(list.size()));
-                    response.setSumDebt(list.stream()
-                            .filter(filterResponse -> filterResponse.getState().contains("APROBADO"))
-                            .mapToDouble(ProposalFilterResponseDTO::getAmount).sum());
                     response.setApprovedOnes(list.stream()
                             .filter(filterResponse -> filterResponse.getState().contains("APROBADO"))
                             .count());
                     response.setPage(page);
                     return response;
                 })
+                .flatMap(response -> ServerResponse.ok().bodyValue(response));
+    }
+
+    @Operation(
+            operationId = "updateProposalState",
+            summary = "Updates Proposal State",
+            description = "Updates Proposal State of a previous created proposal",
+            parameters = {
+                    @Parameter(name = "id", description = "ID of proposal", in = ParameterIn.PATH, required = true),
+                    @Parameter(name = "stateId", description = "State ID", in = ParameterIn.QUERY, required = true),
+            },
+            responses = {
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "State updated successfully",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = ProposalResponseDTO.class)
+                            )
+                    )
+            }
+    )
+    public Mono<ServerResponse> listenUpdateStateProposal(ServerRequest serverRequest) {
+        BigInteger id = new BigInteger(serverRequest.pathVariable("id"));
+        Integer stateId = serverRequest
+                .queryParam("stateId")
+                .map(Integer::valueOf)
+                .orElse(null);
+
+        return proposalUseCase.updateState(id, stateId)
+                .map(mapper::toResponse)
                 .flatMap(response -> ServerResponse.ok().bodyValue(response));
     }
 

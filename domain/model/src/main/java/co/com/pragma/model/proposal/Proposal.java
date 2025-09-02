@@ -24,6 +24,7 @@ public class Proposal {
     private LocalDate limitDate;
     private LocalDate creationDate;
     private Double baseSalary;
+    private Double monthlyFee;
     private String email;
     private Integer stateId;
     private Long proposalTypeId;

@@ -1,5 +1,6 @@
 package co.com.pragma.api.state;
 
+import co.com.pragma.api.SecurityTestConfig;
 import co.com.pragma.api.config.BasePath;
 import co.com.pragma.api.state.config.StatePath;
 import co.com.pragma.api.state.dto.CreateStateDTO;
@@ -13,6 +14,7 @@ import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.test.autoconfigure.web.reactive.WebFluxTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.TestPropertySource;
@@ -28,6 +30,7 @@ import static org.mockito.Mockito.when;
 @EnableConfigurationProperties({StatePath.class, BasePath.class})
 @TestPropertySource(properties = "routes.base-path=/api/v1")
 @TestPropertySource(properties = "routes.paths.states=/estado")
+@Import(SecurityTestConfig.class)
 @WebFluxTest
 public class StateRouterRestTest {
 

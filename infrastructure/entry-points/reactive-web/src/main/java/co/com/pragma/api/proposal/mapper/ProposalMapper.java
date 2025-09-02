@@ -19,6 +19,7 @@ public interface ProposalMapper {
 
     @Mapping(source = "limitDate", target = "limitDate", qualifiedByName = "localDateToString")
     @Mapping(source = "creationDate", target = "creationDate", qualifiedByName = "localDateToString")
+    @Mapping(source = "state.name", target = "state")
     ProposalResponseDTO toResponse(Proposal domain);
 
     @Mapping(source = "limitDate", target = "limitDate", qualifiedByName = "localDateToString")
