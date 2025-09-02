@@ -1,12 +1,18 @@
 package co.com.pragma.api.proposal;
 
+import co.com.pragma.api.external.authentication.auth.ExternalAuthHandler;
+import co.com.pragma.api.external.authentication.auth.dto.ValidateResponseDTO;
 import co.com.pragma.api.proposal.dto.CreateProposalDTO;
+import co.com.pragma.api.proposal.dto.ProposalPaginatedResponseDTO;
 import co.com.pragma.api.proposal.dto.ProposalResponseDTO;
 import co.com.pragma.api.dto.errors.ErrorResponse;
 import co.com.pragma.api.exception.FieldValidationException;
+import co.com.pragma.api.proposal.dto.filter.ProposalFilterDTO;
 import co.com.pragma.api.proposal.mapper.ProposalMapper;
 import co.com.pragma.usecase.proposal.ProposalUseCase;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.parameters.RequestBody;
@@ -25,6 +31,7 @@ import org.springframework.web.reactive.function.server.ServerRequest;
 import org.springframework.web.reactive.function.server.ServerResponse;
 import reactor.core.publisher.Mono;
 
+import java.math.BigInteger;
 import java.util.List;
 
 @SecurityRequirement(name = "bearerAuth")
@@ -69,6 +76,7 @@ import java.util.List;
 public class ProposalHandler {
 
     private final ProposalUseCase proposalUseCase;
+    private final ExternalAuthHandler authHandler;
     private final ProposalMapper mapper;
     private final Validator validator;
 
@@ -112,7 +120,11 @@ public class ProposalHandler {
                 })
                 .map(mapper::toDomain)
                 .doOnNext(domain -> log.debug("[ProposalHandler] Mapped DTO to domain model: {}", domain))
-                .flatMap(proposalUseCase::saveProposal)
+                .flatMap(domain ->
+                        searchTokenInformation(serverRequest)
+                                .doOnNext(validateResponse -> log.debug("[ProposalHandler] Token validated: {}", validateResponse))
+                                .flatMap(validateResponse -> proposalUseCase.saveProposal(domain, validateResponse.getUserName()))
+                )
                 .doOnSuccess(saved -> log.info("[ProposalHandler] Proposal saved successfully with id={}", saved.getId()))
                 .map(mapper::toResponse)
                 .doOnNext(response -> log.debug("[ProposalHandler] Mapped domain model to response DTO: {}", response))
@@ -120,6 +132,94 @@ public class ProposalHandler {
                         .contentType(MediaType.APPLICATION_JSON)
                         .bodyValue(savedProposalResponse))
                 .doOnError(error -> log.error("[ProposalHandler] Error while saving proposal", error));
+    }
+
+    @Operation(
+            operationId = "filterByCriteria",
+            summary = "Filters proposals by criteria",
+            description = "Filter proposals by criteria and returns a paginated list",
+            parameters = {
+                    @Parameter(name = "proposalTypeId", description = "ID of proposal type", in = ParameterIn.QUERY),
+                    @Parameter(name = "stateId", description = "State ID", in = ParameterIn.QUERY),
+                    @Parameter(name = "email", description = "Email to filter", in = ParameterIn.QUERY),
+                    @Parameter(name = "limit", description = "Page size", in = ParameterIn.QUERY, required = true),
+                    @Parameter(name = "offset", description = "Page offset", in = ParameterIn.QUERY, required = true)
+            },
+            responses = {
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "Paginated list of proposals by criteria",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = ProposalPaginatedResponseDTO.class)
+                            )
+                    )
+            }
+    )
+    public Mono<ServerResponse> listenFilterByCriteria(ServerRequest serverRequest) {
+        Long proposalTypeId = serverRequest
+                .queryParam("proposalTypeId")
+                .map(Long::valueOf)
+                .orElse(null);
+
+        Integer stateId = serverRequest
+                .queryParam("stateId")
+                .map(Integer::valueOf)
+                .orElse(null);
+
+        String email = serverRequest
+                .queryParam("email")
+                .orElse(null);
+
+        Integer limit = Integer.parseInt(serverRequest.queryParam("limit").orElse("10"));
+        Integer offset = Integer.parseInt(serverRequest.queryParam("offset").orElse("0"));
+
+        ProposalFilterDTO filter = new ProposalFilterDTO();
+        filter.setProposalTypeId(proposalTypeId);
+        filter.setStateId(stateId);
+        filter.setEmail(email);
+        filter.setLimit(limit);
+        filter.setOffset(offset);
+
+        int page = (offset / limit) + 1;
+
+        Errors errors = new BeanPropertyBindingResult(filter, ProposalFilterDTO.class.getName());
+        validator.validate(filter, errors);
+        if (errors.hasErrors()) {
+            List<String> messageErrors = errors.getFieldErrors().stream()
+                    .map(fe -> fe.getField() + " " + fe.getDefaultMessage())
+                    .toList();
+            return Mono.error(new FieldValidationException(messageErrors));
+        }
+
+        return proposalUseCase.findByCriteria(
+                        filter.getProposalTypeId(),
+                        filter.getStateId(),
+                        filter.getEmail(),
+                        filter.getLimit(),
+                        filter.getOffset()
+                )
+                .map(mapper::toResponseFilter)
+                .collectList()
+                .map(list -> {
+                    ProposalPaginatedResponseDTO response = new ProposalPaginatedResponseDTO();
+                    response.setData(list);
+                    response.setTotalElements(BigInteger.valueOf(list.size()));
+                    response.setPage(page);
+                    return response;
+                })
+                .flatMap(response -> ServerResponse.ok().bodyValue(response));
+    }
+
+    private Mono<ValidateResponseDTO> searchTokenInformation(ServerRequest serverRequest) {
+        String token = null;
+        String authHeader = serverRequest.headers().firstHeader("Authorization");
+
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            token = authHeader.substring(7);
+        }
+
+        return authHandler.validateToken(token);
     }
 
 

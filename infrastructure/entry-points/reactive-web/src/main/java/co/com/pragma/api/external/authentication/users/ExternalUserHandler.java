@@ -21,18 +21,14 @@ import reactor.core.publisher.Mono;
 public class ExternalUserHandler implements UserRepository {
 
     private final ClientUsersBasePath usersBaseUrl;
-    private final WebClient.Builder webClientBuilder;
+    private final WebClient client;
     private final UserMapper mapper;
 
     public Mono<User> findByIdentificationNumber(String identificationNumber) {
         log.info("[ExternalUserHandler] Starting request to external Users service for identification number: {}", identificationNumber);
 
-        WebClient client = webClientBuilder
-                .baseUrl(usersBaseUrl.getUsers())
-                .build();
-
         return client.get()
-                .uri("/{identificationNumber}", identificationNumber)
+                .uri(usersBaseUrl.getUsers() +"/{identificationNumber}", identificationNumber)
                 .retrieve()
                 .onStatus(HttpStatusCode::is4xxClientError, response -> {
                     log.warn("[ExternalUserHandler] 4xx error occurred while fetching user with identification number: {}", identificationNumber);

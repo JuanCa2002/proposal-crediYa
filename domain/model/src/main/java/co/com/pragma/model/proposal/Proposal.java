@@ -22,7 +22,10 @@ public class Proposal {
     private String userIdentificationNumber;
     private Integer proposalLimit;
     private LocalDate limitDate;
+    private Double baseSalary;
     private String email;
     private Integer stateId;
     private Long proposalTypeId;
+    private ProposalType proposalType;
+    private State state;
 }

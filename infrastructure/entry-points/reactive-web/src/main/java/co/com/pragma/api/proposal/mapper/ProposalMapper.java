@@ -2,6 +2,7 @@ package co.com.pragma.api.proposal.mapper;
 
 import co.com.pragma.api.mapper.DateMapper;
 import co.com.pragma.api.proposal.dto.CreateProposalDTO;
+import co.com.pragma.api.proposal.dto.ProposalFilterResponseDTO;
 import co.com.pragma.api.proposal.dto.ProposalResponseDTO;
 import co.com.pragma.model.proposal.Proposal;
 import org.mapstruct.Mapper;
@@ -18,4 +19,10 @@ public interface ProposalMapper {
 
     @Mapping(source = "limitDate", target = "limitDate", qualifiedByName = "localDateToString")
     ProposalResponseDTO toResponse(Proposal domain);
+
+    @Mapping(source = "limitDate", target = "limitDate", qualifiedByName = "localDateToString")
+    @Mapping(source = "proposalType.name", target = "proposalType")
+    @Mapping(source = "state.name", target = "state")
+    @Mapping(source = "proposalType.interestRate", target = "interestRate")
+    ProposalFilterResponseDTO toResponseFilter(Proposal domain);
 }

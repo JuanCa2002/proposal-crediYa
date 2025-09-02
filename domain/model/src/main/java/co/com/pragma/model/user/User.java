@@ -15,6 +15,7 @@ import java.time.LocalDate;
 public class User {
 
     private String id;
+    private String userName;
     private String identificationNumber;
     private String firstName;
     private String secondName;
