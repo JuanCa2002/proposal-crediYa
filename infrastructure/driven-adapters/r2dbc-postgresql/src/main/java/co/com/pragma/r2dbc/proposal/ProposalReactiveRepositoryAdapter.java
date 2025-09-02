@@ -7,6 +7,7 @@ import co.com.pragma.r2dbc.helper.ReactiveAdapterOperations;
 import org.reactivecommons.utils.ObjectMapper;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.reactive.TransactionalOperator;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.math.BigInteger;
@@ -29,6 +30,13 @@ public class ProposalReactiveRepositoryAdapter extends ReactiveAdapterOperations
     @Override
     public Mono<Proposal> save(Proposal proposal) {
         return super.save(proposal)
+                .as(txOperator::transactional);
+    }
+
+    @Override
+    public Flux<Proposal> findByCriteria(Long proposalTypeId, Integer stateId, String email, int limit, int offset) {
+        return repository.findByCriteria(proposalTypeId, stateId, email, limit, offset)
+                .map(entry -> mapper.map(entry, Proposal.class))
                 .as(txOperator::transactional);
     }
 

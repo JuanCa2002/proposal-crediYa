@@ -1,6 +1,6 @@
 package co.com.pragma.api.external.authentication.auth.exception;
 
-import co.com.pragma.api.exception.UnauthorizedException;
+import co.com.pragma.usecase.exception.UnauthorizedException;
 
 public class InvalidTokenUnauthorizedException extends UnauthorizedException {
 

@@ -23,6 +23,7 @@ CREATE TABLE proposal_types (
 CREATE TABLE proposals (
     id BIGSERIAL PRIMARY KEY,
     amount NUMERIC(12,2) NOT NULL,
+    base_salary NUMERIC(12,2) NOT NULL,
     proposal_limit INTEGER NOT NULL,
     limit_date DATE NOT NULL,
     email VARCHAR(255) NOT NULL,
