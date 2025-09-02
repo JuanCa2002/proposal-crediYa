@@ -15,6 +15,8 @@ import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.time.LocalDate;
+
 @RequiredArgsConstructor
 public class ProposalUseCase {
 
@@ -26,6 +28,7 @@ public class ProposalUseCase {
     private static final String INITIAL_STATE_NAME = "PENDIENTE_REVISION";
 
     public Mono<Proposal> saveProposal(Proposal proposal, String userName) {
+        proposal.setCreationDate(LocalDate.now());
         return stateRepository.findByName(INITIAL_STATE_NAME)
                 .switchIfEmpty(Mono.error(new InitialStateNotFound(INITIAL_STATE_NAME)))
                 .flatMap(state -> {
@@ -45,8 +48,10 @@ public class ProposalUseCase {
                 });
     }
 
-    public Flux<Proposal> findByCriteria(Long proposalTypeId, Integer stateId, String email, int limit, int offset) {
-        return proposalRepository.findByCriteria(proposalTypeId, stateId, email, limit, offset)
+    public Flux<Proposal> findByCriteria(Long proposalTypeId, Integer stateId, String email,
+                                         LocalDate initialDate, LocalDate endDate, Integer proposalLimit,int limit, int offset) {
+        return proposalRepository.findByCriteria(proposalTypeId, stateId, email,
+                        initialDate, endDate, proposalLimit, limit, offset)
                 .flatMap(proposal ->
                         Mono.zip(
                                 proposalTypeRepository.findById(proposal.getProposalTypeId()),

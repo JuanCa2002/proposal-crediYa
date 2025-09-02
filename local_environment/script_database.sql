@@ -26,6 +26,7 @@ CREATE TABLE proposals (
     base_salary NUMERIC(12,2) NOT NULL,
     proposal_limit INTEGER NOT NULL,
     limit_date DATE NOT NULL,
+    creation_date DATE NOT NULL,
     email VARCHAR(255) NOT NULL,
     state_id BIGINT NOT NULL,
     proposal_type_id BIGINT NOT NULL,

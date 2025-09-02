@@ -6,6 +6,10 @@ import lombok.*;
 @Getter
 @Setter
 @AllArgsConstructor
+@NoArgsConstructor
 @Builder
 public class ProposalPaginatedResponseDTO extends PaginatedResponseDTO<ProposalFilterResponseDTO> {
+
+    private Double sumDebt;
+    private Long approvedOnes;
 }

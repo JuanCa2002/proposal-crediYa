@@ -20,6 +20,7 @@ public class ProposalEntity {
     private Double amount;
     private Integer proposalLimit;
     private LocalDate limitDate;
+    private LocalDate creationDate;
     private String email;
     private Double baseSalary;
     private Integer stateId;
