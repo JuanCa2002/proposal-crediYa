@@ -3,6 +3,7 @@ package co.com.pragma.api.proposal;
 import co.com.pragma.api.external.authentication.auth.ExternalAuthHandler;
 import co.com.pragma.api.external.authentication.auth.dto.ValidateResponseDTO;
 import co.com.pragma.api.proposal.dto.CreateProposalDTO;
+import co.com.pragma.api.proposal.dto.ProposalFilterResponseDTO;
 import co.com.pragma.api.proposal.dto.ProposalPaginatedResponseDTO;
 import co.com.pragma.api.proposal.dto.ProposalResponseDTO;
 import co.com.pragma.api.dto.errors.ErrorResponse;
@@ -32,6 +33,8 @@ import org.springframework.web.reactive.function.server.ServerResponse;
 import reactor.core.publisher.Mono;
 
 import java.math.BigInteger;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 @SecurityRequirement(name = "bearerAuth")
@@ -79,6 +82,8 @@ public class ProposalHandler {
     private final ExternalAuthHandler authHandler;
     private final ProposalMapper mapper;
     private final Validator validator;
+
+    private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
     @Operation(
             operationId = "saveProposal",
@@ -142,6 +147,9 @@ public class ProposalHandler {
                     @Parameter(name = "proposalTypeId", description = "ID of proposal type", in = ParameterIn.QUERY),
                     @Parameter(name = "stateId", description = "State ID", in = ParameterIn.QUERY),
                     @Parameter(name = "email", description = "Email to filter", in = ParameterIn.QUERY),
+                    @Parameter(name = "initialDate", description = "Initial Date references to creation date of the proposal", in = ParameterIn.QUERY),
+                    @Parameter(name = "endDate", description = "Final Date references to creation date of the proposal", in = ParameterIn.QUERY),
+                    @Parameter(name = "proposalLimit", description = "Proposal months limit time", in = ParameterIn.QUERY),
                     @Parameter(name = "limit", description = "Page size", in = ParameterIn.QUERY, required = true),
                     @Parameter(name = "offset", description = "Page offset", in = ParameterIn.QUERY, required = true)
             },
@@ -157,6 +165,14 @@ public class ProposalHandler {
             }
     )
     public Mono<ServerResponse> listenFilterByCriteria(ServerRequest serverRequest) {
+        String initialDate = serverRequest
+                .queryParam("initialDate")
+                .orElse(null);
+
+        String endDate = serverRequest
+                .queryParam("endDate")
+                .orElse(null);
+
         Long proposalTypeId = serverRequest
                 .queryParam("proposalTypeId")
                 .map(Long::valueOf)
@@ -164,6 +180,11 @@ public class ProposalHandler {
 
         Integer stateId = serverRequest
                 .queryParam("stateId")
+                .map(Integer::valueOf)
+                .orElse(null);
+
+        Integer proposalLimit = serverRequest
+                .queryParam("proposalLimit")
                 .map(Integer::valueOf)
                 .orElse(null);
 
@@ -176,6 +197,9 @@ public class ProposalHandler {
 
         ProposalFilterDTO filter = new ProposalFilterDTO();
         filter.setProposalTypeId(proposalTypeId);
+        filter.setProposalLimit(proposalLimit);
+        filter.setEndDate(endDate);
+        filter.setInitialDate(initialDate);
         filter.setStateId(stateId);
         filter.setEmail(email);
         filter.setLimit(limit);
@@ -196,6 +220,9 @@ public class ProposalHandler {
                         filter.getProposalTypeId(),
                         filter.getStateId(),
                         filter.getEmail(),
+                        filter.getInitialDate()!= null ? LocalDate.parse(filter.getInitialDate(), FORMATTER) : null,
+                        filter.getEndDate()!= null ? LocalDate.parse(filter.getEndDate(), FORMATTER): null,
+                        filter.getProposalLimit(),
                         filter.getLimit(),
                         filter.getOffset()
                 )
@@ -205,9 +232,43 @@ public class ProposalHandler {
                     ProposalPaginatedResponseDTO response = new ProposalPaginatedResponseDTO();
                     response.setData(list);
                     response.setTotalElements(BigInteger.valueOf(list.size()));
+                    response.setApprovedOnes(list.stream()
+                            .filter(filterResponse -> filterResponse.getState().contains("APROBADO"))
+                            .count());
                     response.setPage(page);
                     return response;
                 })
+                .flatMap(response -> ServerResponse.ok().bodyValue(response));
+    }
+
+    @Operation(
+            operationId = "updateProposalState",
+            summary = "Updates Proposal State",
+            description = "Updates Proposal State of a previous created proposal",
+            parameters = {
+                    @Parameter(name = "id", description = "ID of proposal", in = ParameterIn.PATH, required = true),
+                    @Parameter(name = "stateId", description = "State ID", in = ParameterIn.QUERY, required = true),
+            },
+            responses = {
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "State updated successfully",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = ProposalResponseDTO.class)
+                            )
+                    )
+            }
+    )
+    public Mono<ServerResponse> listenUpdateStateProposal(ServerRequest serverRequest) {
+        BigInteger id = new BigInteger(serverRequest.pathVariable("id"));
+        Integer stateId = serverRequest
+                .queryParam("stateId")
+                .map(Integer::valueOf)
+                .orElse(null);
+
+        return proposalUseCase.updateState(id, stateId)
+                .map(mapper::toResponse)
                 .flatMap(response -> ServerResponse.ok().bodyValue(response));
     }
 

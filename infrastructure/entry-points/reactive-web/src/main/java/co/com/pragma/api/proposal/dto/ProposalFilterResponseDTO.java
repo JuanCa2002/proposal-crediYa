@@ -7,7 +7,6 @@ import lombok.*;
 public class ProposalFilterResponseDTO extends ProposalResponseDTO{
 
     private String proposalType;
-    private String state;
     private Double interestRate;
 
 }

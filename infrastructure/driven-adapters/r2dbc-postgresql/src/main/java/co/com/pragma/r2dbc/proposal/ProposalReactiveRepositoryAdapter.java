@@ -11,6 +11,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.math.BigInteger;
+import java.time.LocalDate;
 
 @Repository
 public class ProposalReactiveRepositoryAdapter extends ReactiveAdapterOperations<
@@ -34,8 +35,10 @@ public class ProposalReactiveRepositoryAdapter extends ReactiveAdapterOperations
     }
 
     @Override
-    public Flux<Proposal> findByCriteria(Long proposalTypeId, Integer stateId, String email, int limit, int offset) {
-        return repository.findByCriteria(proposalTypeId, stateId, email, limit, offset)
+    public Flux<Proposal> findByCriteria(Long proposalTypeId, Integer stateId, String email,
+             LocalDate initialDate, LocalDate endDate, Integer proposalLimit, int limit, int offset) {
+        return repository.findByCriteria(proposalTypeId, stateId, email,
+                        initialDate, endDate, proposalLimit,limit, offset)
                 .map(entry -> mapper.map(entry, Proposal.class))
                 .as(txOperator::transactional);
     }
