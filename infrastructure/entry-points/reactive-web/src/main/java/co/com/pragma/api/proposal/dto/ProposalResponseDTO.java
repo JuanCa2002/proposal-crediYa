@@ -9,11 +9,11 @@ import java.time.LocalDate;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
 public class ProposalResponseDTO {
 
     private BigInteger id;
     private Double amount;
+    private Double baseSalary;
     private LocalDate limitDate;
     private String email;
 }

@@ -1,4 +1,4 @@
-package co.com.pragma.api.exception;
+package co.com.pragma.usecase.exception;
 
 public class UnauthorizedException extends RuntimeException{
 

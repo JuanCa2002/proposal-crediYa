@@ -27,6 +27,12 @@ public class ProposalRouterRest {
                     method = {RequestMethod.POST},
                     beanClass = ProposalHandler.class,
                     beanMethod = "listenSaveProposal"
+            ),
+            @RouterOperation(
+                    path = "/solicitud",
+                    method = {RequestMethod.GET},
+                    beanClass = ProposalHandler.class,
+                    beanMethod = "listenFilterByCriteria"
             )
     })
     public RouterFunction<ServerResponse> proposalRoutes(ProposalHandler proposalHandler) {
@@ -34,6 +40,7 @@ public class ProposalRouterRest {
                 .route()
                 .path(basePath.getBasePath(), builder -> builder
                         .POST(proposalPath.getProposals(), this.proposalHandler::listenSaveProposal)
+                        .GET(proposalPath.getProposals(), this.proposalHandler::listenFilterByCriteria)
                 )
                 .build();
     }

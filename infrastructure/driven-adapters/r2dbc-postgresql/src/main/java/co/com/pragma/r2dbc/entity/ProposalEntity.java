@@ -21,6 +21,7 @@ public class ProposalEntity {
     private Integer proposalLimit;
     private LocalDate limitDate;
     private String email;
+    private Double baseSalary;
     private Integer stateId;
     private Long proposalTypeId;
 }
