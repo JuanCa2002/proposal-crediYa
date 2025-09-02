@@ -3,6 +3,7 @@ package co.com.pragma.api.proposal;
 import co.com.pragma.api.external.authentication.auth.ExternalAuthHandler;
 import co.com.pragma.api.external.authentication.auth.dto.ValidateResponseDTO;
 import co.com.pragma.api.proposal.dto.CreateProposalDTO;
+import co.com.pragma.api.proposal.dto.ProposalFilterResponseDTO;
 import co.com.pragma.api.proposal.dto.ProposalPaginatedResponseDTO;
 import co.com.pragma.api.proposal.dto.ProposalResponseDTO;
 import co.com.pragma.api.dto.errors.ErrorResponse;
@@ -239,6 +240,10 @@ public class ProposalHandler {
                     response.setApprovedOnes(list.stream()
                             .filter(filterResponse -> filterResponse.getState().contains("APROBADO"))
                             .count());
+                    response.setSumRequestApprovedAmount(list.stream()
+                            .filter(filterResponse -> filterResponse.getState().contains("APROBADO"))
+                            .mapToDouble(ProposalFilterResponseDTO::getAmount)
+                            .sum());
                     response.setPage(page);
                     return response;
                 })
