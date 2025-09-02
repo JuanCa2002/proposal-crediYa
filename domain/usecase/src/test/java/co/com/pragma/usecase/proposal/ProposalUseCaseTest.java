@@ -9,14 +9,14 @@ import co.com.pragma.model.state.gateways.StateRepository;
 import co.com.pragma.model.user.User;
 import co.com.pragma.model.user.gateways.UserRepository;
 import co.com.pragma.usecase.proposal.constants.ProposalMessageConstants;
-import co.com.pragma.usecase.proposal.exception.InitialStateNotFound;
-import co.com.pragma.usecase.proposal.exception.ProposalTypeByIdNotFoundException;
+import co.com.pragma.usecase.proposal.exception.*;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
@@ -55,6 +55,17 @@ public class ProposalUseCaseTest {
                 .proposalTypeId(1L)
                 .build();
 
+    private final Proposal proposalTwo = Proposal.builder()
+            .id(BigInteger.TWO)
+            .amount(60000.0)
+            .userIdentificationNumber("456")
+            .proposalLimit(4)
+            .limitDate(LocalDate.of(2003, 5, 24))
+            .email("goku@email.com")
+            .stateId(1)
+            .proposalTypeId(1L)
+            .build();
+
     private final State state = State.builder()
             .id(1)
             .name("PENDIENTE_REVISION")
@@ -72,6 +83,8 @@ public class ProposalUseCaseTest {
 
     private final User user = User.builder()
             .id("1")
+            .userName("juan")
+            .baseSalary(1440.0)
             .identificationNumber("123")
             .firstName("Juan")
             .secondName("Camilo")
@@ -81,6 +94,114 @@ public class ProposalUseCaseTest {
             .baseSalary(1444.00)
             .build();
 
+    @Test
+    void shouldUpdateProposalState() {
+        when(proposalRepository.findById(Mockito.any(BigInteger.class)))
+                .thenReturn(Mono.just(proposal));
+
+        when(stateRepository.findById(Mockito.anyInt()))
+                .thenReturn(Mono.just(state));
+
+        when(proposalTypeRepository.findById(Mockito.anyLong()))
+                .thenReturn(Mono.just(proposalType));
+
+        when(proposalRepository.save(Mockito.any(Proposal.class)))
+                .thenReturn(Mono.just(proposal));
+
+        Mono<Proposal> result = proposalUseCase.updateState(proposal.getId(), state.getId());
+
+        StepVerifier.create(result)
+                .expectNextMatches(proposal ->
+                        proposal.getId().equals(BigInteger.ONE) &&
+                                proposal.getStateId().equals(state.getId())
+                )
+                .verifyComplete();
+    }
+
+    @Test
+    void shouldUpdateProposalState_whenStateIsApproved() {
+        when(proposalRepository.findById(Mockito.any(BigInteger.class)))
+                .thenReturn(Mono.just(proposal));
+
+        state.setName("APROBADO");
+        when(stateRepository.findById(Mockito.anyInt()))
+                .thenReturn(Mono.just(state));
+
+        when(proposalTypeRepository.findById(Mockito.anyLong()))
+                .thenReturn(Mono.just(proposalType));
+
+        when(proposalRepository.save(Mockito.any(Proposal.class)))
+                .thenReturn(Mono.just(proposal));
+
+        Mono<Proposal> result = proposalUseCase.updateState(proposal.getId(), state.getId());
+
+        StepVerifier.create(result)
+                .expectNextMatches(proposal ->
+                        proposal.getId().equals(BigInteger.ONE) &&
+                                proposal.getStateId().equals(state.getId()) &&
+                                proposal.getMonthlyFee() != null
+                )
+                .verifyComplete();
+    }
+
+    @Test
+    void shouldUpdateProposalState_ProposalByIdNotFoundException() {
+        when(proposalRepository.findById(Mockito.any(BigInteger.class)))
+                .thenReturn(Mono.empty());
+
+        Mono<Proposal> result = proposalUseCase.updateState(proposal.getId(), state.getId());
+
+        StepVerifier.create(result)
+                .expectErrorMatches(throwable ->
+                        throwable instanceof ProposalByIdNotFoundException &&
+                                throwable.getMessage().equals(
+                                        MessageFormat.format(ProposalMessageConstants.PROPOSAL_BY_ID_NOT_FOUND_EXCEPTION, proposal.getId())
+                                )
+                )
+                .verify();
+    }
+
+    @Test
+    void shouldUpdateProposalState_StateByIdNotFoundException() {
+        when(proposalRepository.findById(Mockito.any(BigInteger.class)))
+                .thenReturn(Mono.just(proposal));
+
+        when(stateRepository.findById(Mockito.anyInt()))
+                .thenReturn(Mono.empty());
+
+        Mono<Proposal> result = proposalUseCase.updateState(proposal.getId(), state.getId());
+
+        StepVerifier.create(result)
+                .expectErrorMatches(throwable ->
+                        throwable instanceof StateByIdNotFoundException &&
+                                throwable.getMessage().equals(
+                                        MessageFormat.format(ProposalMessageConstants.STATE_NOT_FOUND, state.getId())
+                                )
+                )
+                .verify();
+    }
+
+    @Test
+    void findByCriteria() {
+        when(proposalRepository.findByCriteria(Mockito.anyLong(), Mockito.anyInt(),
+                Mockito.anyString(), Mockito.any(LocalDate.class), Mockito.any(LocalDate.class),
+                Mockito.anyInt(), Mockito.anyInt(), Mockito.anyInt()))
+                .thenReturn(Flux.just(proposal, proposalTwo));
+
+        when(proposalTypeRepository.findById(Mockito.anyLong()))
+                .thenReturn(Mono.just(proposalType));
+
+        when(stateRepository.findById(Mockito.anyInt()))
+                .thenReturn(Mono.just(state));
+
+        Flux<Proposal> result = proposalUseCase.findByCriteria(proposalType.getId(),
+                state.getId(), proposal.getEmail(), LocalDate.of(2000, 8, 8), LocalDate.of(2080, 8, 8), 1, 10, 0);
+
+        StepVerifier.create(result)
+                .expectNextMatches(p -> p.getId().equals(BigInteger.ONE))
+                .expectNextMatches(p -> p.getId().equals(BigInteger.TWO))
+                .verifyComplete();
+    }
 
     @Test
     void shouldSaveProposal() {
@@ -96,7 +217,7 @@ public class ProposalUseCaseTest {
         when(proposalRepository.save(Mockito.any(Proposal.class)))
                 .thenReturn(Mono.just(proposal));
 
-        Mono<Proposal> result = proposalUseCase.saveProposal(proposal);
+        Mono<Proposal> result = proposalUseCase.saveProposal(proposal, user.getUserName());
 
         StepVerifier.create(result)
                 .expectNextMatches(proposal -> proposal.getId().equals(BigInteger.ONE))
@@ -108,7 +229,10 @@ public class ProposalUseCaseTest {
         when(stateRepository.findByName(Mockito.anyString()))
                 .thenReturn(Mono.empty());
 
-        Mono<Proposal> result = proposalUseCase.saveProposal(proposal);
+        when(userRepository.findByIdentificationNumber(Mockito.anyString()))
+                .thenReturn(Mono.just(user));
+
+        Mono<Proposal> result = proposalUseCase.saveProposal(proposal, user.getUserName());
 
         StepVerifier.create(result)
                 .expectErrorMatches(throwable ->
@@ -128,13 +252,64 @@ public class ProposalUseCaseTest {
         when(proposalTypeRepository.findById(Mockito.anyLong()))
                 .thenReturn(Mono.empty());
 
-        Mono<Proposal> result = proposalUseCase.saveProposal(proposal);
+        when(userRepository.findByIdentificationNumber(Mockito.anyString()))
+                .thenReturn(Mono.just(user));
+
+        Mono<Proposal> result = proposalUseCase.saveProposal(proposal, user.getUserName());
 
         StepVerifier.create(result)
                 .expectErrorMatches(throwable ->
                         throwable instanceof ProposalTypeByIdNotFoundException &&
                                 throwable.getMessage().equals(
                                         MessageFormat.format(ProposalMessageConstants.PROPOSAL_TYPE_NOT_FOUND, proposal.getProposalTypeId())
+                                )
+                )
+                .verify();
+    }
+
+    @Test
+    void shouldSaveProposal_ProposalAmountDoesNotMatchTypeBusinessException() {
+        proposal.setAmount(80000.0);
+        when(stateRepository.findByName(Mockito.anyString()))
+                .thenReturn(Mono.just(state));
+
+        when(proposalTypeRepository.findById(Mockito.anyLong()))
+                .thenReturn(Mono.just(proposalType));
+
+        when(userRepository.findByIdentificationNumber(Mockito.anyString()))
+                .thenReturn(Mono.just(user));
+
+        Mono<Proposal> result = proposalUseCase.saveProposal(proposal, user.getUserName());
+
+        StepVerifier.create(result)
+                .expectErrorMatches(throwable ->
+                        throwable instanceof ProposalAmountDoesNotMatchTypeBusinessException &&
+                                throwable.getMessage().equals(
+                                        MessageFormat.format(ProposalMessageConstants.PROPOSAL_TYPE_NOT_MATCH, proposalType.getName()
+                                                , proposalType.getMinimumAmount(), proposalType.getMaximumAmount())
+                                )
+                )
+                .verify();
+    }
+
+    @Test
+    void shouldSaveProposal_UserLoginNotMatchUserRequestUnauthorizedException() {
+        when(stateRepository.findByName(Mockito.anyString()))
+                .thenReturn(Mono.just(state));
+
+        when(proposalTypeRepository.findById(Mockito.anyLong()))
+                .thenReturn(Mono.just(proposalType));
+
+        when(userRepository.findByIdentificationNumber(Mockito.anyString()))
+                .thenReturn(Mono.just(user));
+
+        Mono<Proposal> result = proposalUseCase.saveProposal(proposal, "error");
+
+        StepVerifier.create(result)
+                .expectErrorMatches(throwable ->
+                        throwable instanceof UserLoginNotMatchUserRequestUnauthorizedException &&
+                                throwable.getMessage().equals(
+                                        ProposalMessageConstants.USER_NOT_MATCH_LOGIN_USER
                                 )
                 )
                 .verify();

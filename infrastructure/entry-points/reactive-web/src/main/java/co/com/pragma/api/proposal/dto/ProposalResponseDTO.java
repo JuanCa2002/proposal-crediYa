@@ -15,5 +15,8 @@ public class ProposalResponseDTO {
     private Double amount;
     private Double baseSalary;
     private LocalDate limitDate;
+    private LocalDate creationDate;
     private String email;
+    private String state;
+    private Double monthlyFee;
 }
