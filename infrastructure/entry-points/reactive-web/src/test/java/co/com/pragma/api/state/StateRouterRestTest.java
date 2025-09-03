@@ -93,7 +93,7 @@ public class StateRouterRestTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(request)
                 .exchange()
-                .expectStatus().isOk()
+                .expectStatus().isCreated()
                 .expectBody(StateResponseDTO.class)
                 .value(saved -> Assertions.assertThat(saved.getId()).isEqualTo(response.getId()));
     }

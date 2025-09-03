@@ -23,6 +23,7 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.BeanPropertyBindingResult;
@@ -96,7 +97,7 @@ public class ProposalHandler {
                     )
             ),responses = {
             @ApiResponse(
-                    responseCode = "200",
+                    responseCode = "201",
                     description = "Proposal created",
                     content = @Content(
                             mediaType = "application/json",
@@ -133,7 +134,7 @@ public class ProposalHandler {
                 .doOnSuccess(saved -> log.info("[ProposalHandler] Proposal saved successfully with id={}", saved.getId()))
                 .map(mapper::toResponse)
                 .doOnNext(response -> log.debug("[ProposalHandler] Mapped domain model to response DTO: {}", response))
-                .flatMap(savedProposalResponse -> ServerResponse.ok()
+                .flatMap(savedProposalResponse -> ServerResponse.status(HttpStatus.CREATED)
                         .contentType(MediaType.APPLICATION_JSON)
                         .bodyValue(savedProposalResponse))
                 .doOnError(error -> log.error("[ProposalHandler] Error while saving proposal", error));
@@ -278,7 +279,8 @@ public class ProposalHandler {
                 .map(Integer::valueOf)
                 .orElse(null);
         log.info("[ProposalHandler] Updating state of the proposal with the id {} with the state id {}", id, stateId);
-        return proposalUseCase.updateState(id, stateId)
+        return searchTokenInformation(serverRequest)
+                .flatMap(validation -> proposalUseCase.updateState(id, stateId, validation.getRole()))
                 .doOnNext(proposal -> log.info("[ProposalHandler] Mapping domain to response"))
                 .map(mapper::toResponse)
                 .flatMap(response -> ServerResponse.ok().bodyValue(response))
