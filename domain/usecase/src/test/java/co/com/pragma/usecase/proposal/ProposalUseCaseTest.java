@@ -72,6 +72,12 @@ public class ProposalUseCaseTest {
             .description("Pendiente de revisión")
             .build();
 
+    private final State currentState = State.builder()
+            .id(1)
+            .name("APROBADO")
+            .description("Aprobado")
+            .build();
+
     private final ProposalType proposalType = ProposalType.builder()
             .id(1L)
             .name("Tipo de solicitud")
@@ -108,7 +114,7 @@ public class ProposalUseCaseTest {
         when(proposalRepository.save(Mockito.any(Proposal.class)))
                 .thenReturn(Mono.just(proposal));
 
-        Mono<Proposal> result = proposalUseCase.updateState(proposal.getId(), state.getId());
+        Mono<Proposal> result = proposalUseCase.updateState(proposal.getId(), state.getId(), "ASESOR");
 
         StepVerifier.create(result)
                 .expectNextMatches(proposal ->
@@ -124,8 +130,10 @@ public class ProposalUseCaseTest {
                 .thenReturn(Mono.just(proposal));
 
         state.setName("APROBADO");
+        currentState.setName("PENDIENTE_REVISION");
         when(stateRepository.findById(Mockito.anyInt()))
-                .thenReturn(Mono.just(state));
+                .thenReturn(Mono.just(state))
+                .thenReturn(Mono.just(currentState));
 
         when(proposalTypeRepository.findById(Mockito.anyLong()))
                 .thenReturn(Mono.just(proposalType));
@@ -133,7 +141,7 @@ public class ProposalUseCaseTest {
         when(proposalRepository.save(Mockito.any(Proposal.class)))
                 .thenReturn(Mono.just(proposal));
 
-        Mono<Proposal> result = proposalUseCase.updateState(proposal.getId(), state.getId());
+        Mono<Proposal> result = proposalUseCase.updateState(proposal.getId(), state.getId(), "ASESOR");
 
         StepVerifier.create(result)
                 .expectNextMatches(proposal ->
@@ -145,11 +153,64 @@ public class ProposalUseCaseTest {
     }
 
     @Test
+    void shouldUpdateProposalState_WhenRoleIsAdmin() {
+        when(proposalRepository.findById(Mockito.any(BigInteger.class)))
+                .thenReturn(Mono.just(proposal));
+
+        state.setName("RECHAZADO");
+        currentState.setName("APROBADO");
+        when(stateRepository.findById(Mockito.anyInt()))
+                .thenReturn(Mono.just(state))
+                .thenReturn(Mono.just(currentState));
+
+        when(proposalTypeRepository.findById(Mockito.anyLong()))
+                .thenReturn(Mono.just(proposalType));
+
+        when(proposalRepository.save(Mockito.any(Proposal.class)))
+                .thenReturn(Mono.just(proposal));
+
+        Mono<Proposal> result = proposalUseCase.updateState(proposal.getId(), state.getId(), "ADMINISTRADOR");
+
+        StepVerifier.create(result)
+                .expectNextMatches(proposal ->
+                        proposal.getId().equals(BigInteger.ONE) &&
+                                proposal.getStateId().equals(state.getId()) &&
+                                proposal.getMonthlyFee() == null
+                )
+                .verifyComplete();
+    }
+
+    @Test
+    void shouldUpdateProposalState_ProposalStateCanNotBeChangeBusinessException() {
+        when(proposalRepository.findById(Mockito.any(BigInteger.class)))
+                .thenReturn(Mono.just(proposal));
+
+        state.setName("APROBADO");
+        when(stateRepository.findById(Mockito.anyInt()))
+                .thenReturn(Mono.just(state))
+                .thenReturn(Mono.just(currentState));
+
+        when(proposalTypeRepository.findById(Mockito.anyLong()))
+                .thenReturn(Mono.just(proposalType));
+
+        Mono<Proposal> result = proposalUseCase.updateState(proposal.getId(), state.getId(), "ASESOR");
+
+        StepVerifier.create(result)
+                .expectErrorMatches(throwable ->
+                        throwable instanceof ProposalStateCanNotBeChangeBusinessException &&
+                                throwable.getMessage().equals(
+                                        ProposalMessageConstants.PROPOSAL_STATE_CAN_NOT_BE_CHANGE
+                                )
+                )
+                .verify();
+    }
+
+    @Test
     void shouldUpdateProposalState_ProposalByIdNotFoundException() {
         when(proposalRepository.findById(Mockito.any(BigInteger.class)))
                 .thenReturn(Mono.empty());
 
-        Mono<Proposal> result = proposalUseCase.updateState(proposal.getId(), state.getId());
+        Mono<Proposal> result = proposalUseCase.updateState(proposal.getId(), state.getId(), "ASESOR");
 
         StepVerifier.create(result)
                 .expectErrorMatches(throwable ->
@@ -169,7 +230,7 @@ public class ProposalUseCaseTest {
         when(stateRepository.findById(Mockito.anyInt()))
                 .thenReturn(Mono.empty());
 
-        Mono<Proposal> result = proposalUseCase.updateState(proposal.getId(), state.getId());
+        Mono<Proposal> result = proposalUseCase.updateState(proposal.getId(), state.getId(), "ASESOR");
 
         StepVerifier.create(result)
                 .expectErrorMatches(throwable ->
