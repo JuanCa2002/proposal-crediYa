@@ -16,6 +16,7 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.BeanPropertyBindingResult;
@@ -83,7 +84,7 @@ public class ProposalTypeHandler {
                     )
             ),responses = {
             @ApiResponse(
-                    responseCode = "200",
+                    responseCode = "201",
                     description = "Proposal Type created",
                     content = @Content(
                             mediaType = "application/json",
@@ -116,7 +117,7 @@ public class ProposalTypeHandler {
                 .doOnSuccess(saved -> log.info("[ProposalTypeHandler] Proposal type saved successfully with id={}", saved.getId()))
                 .map(mapper::toResponse)
                 .doOnNext(response -> log.debug("[ProposalTypeHandler] Mapped domain model to response DTO: {}", response))
-                .flatMap(savedProposalTypeResponse -> ServerResponse.ok()
+                .flatMap(savedProposalTypeResponse -> ServerResponse.status(HttpStatus.CREATED)
                         .contentType(MediaType.APPLICATION_JSON)
                         .bodyValue(savedProposalTypeResponse))
                 .doOnError(error -> log.error("[ProposalTypeHandler] Error while saving proposal type", error));

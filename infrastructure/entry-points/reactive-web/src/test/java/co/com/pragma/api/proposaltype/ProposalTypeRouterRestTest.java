@@ -101,7 +101,7 @@ public class ProposalTypeRouterRestTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(request)
                 .exchange()
-                .expectStatus().isOk()
+                .expectStatus().isCreated()
                 .expectBody(ProposalTypeResponseDTO.class)
                 .value(saved -> Assertions.assertThat(saved.getId()).isEqualTo(response.getId()));
     }

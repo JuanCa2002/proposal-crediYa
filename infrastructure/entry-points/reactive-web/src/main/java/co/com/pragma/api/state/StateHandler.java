@@ -16,6 +16,7 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.BeanPropertyBindingResult;
@@ -83,7 +84,7 @@ public class StateHandler {
                     )
             ),responses = {
             @ApiResponse(
-                    responseCode = "200",
+                    responseCode = "201",
                     description = "State created",
                     content = @Content(
                             mediaType = "application/json",
@@ -116,7 +117,7 @@ public class StateHandler {
                 .doOnSuccess(saved -> log.info("[StateHandler] State saved successfully with id={}", saved.getId()))
                 .map(mapper::toResponse)
                 .doOnNext(response -> log.debug("[StateHandler] Mapped domain model to response DTO: {}", response))
-                .flatMap(savedStateResponse -> ServerResponse.ok()
+                .flatMap(savedStateResponse -> ServerResponse.status(HttpStatus.CREATED)
                         .contentType(MediaType.APPLICATION_JSON)
                         .bodyValue(savedStateResponse))
                 .doOnError(error -> log.error("[StateHandler] Error while saving state", error));

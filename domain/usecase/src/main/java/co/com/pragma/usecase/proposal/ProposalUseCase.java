@@ -64,26 +64,38 @@ public class ProposalUseCase {
                 );
     }
 
-    public Mono<Proposal> updateState(BigInteger id, Integer stateId) {
+    public Mono<Proposal> updateState(BigInteger id, Integer stateId, String role) {
         return proposalRepository.findById(id)
                 .switchIfEmpty(Mono.error(new ProposalByIdNotFoundException(id)))
                 .flatMap(proposal ->
                         stateRepository.findById(stateId)
                                 .switchIfEmpty(Mono.error(new StateByIdNotFoundException(stateId)))
                                 .flatMap(state ->
-                                    proposalTypeRepository.findById(proposal.getProposalTypeId())
-                                            .flatMap(proposalType -> {
-                                                if(state.getName().contains("APROBADO")) {
-                                                    proposal.setMonthlyFee(calculateMonthlyFee(proposal.getAmount(),
-                                                            proposalType.getInterestRate(), proposal.getProposalLimit()));
-                                                }
-                                                proposal.setStateId(stateId);
-                                                return proposalRepository.save(proposal)
-                                                        .map(updatedProposal -> {
-                                                            updatedProposal.setState(state);
-                                                            return updatedProposal;
-                                                        });
-                                            })
+                                        proposalTypeRepository.findById(proposal.getProposalTypeId())
+                                                .flatMap(proposalType ->
+                                                        stateRepository.findById(proposal.getStateId())
+                                                                .flatMap(currentState -> {
+                                                                    if((currentState.getName().contains("APROBADO") ||
+                                                                    currentState.getName().contains("RECHAZADO")) && !role.equals("ADMINISTRADOR")){
+                                                                        return Mono.error(new ProposalStateCanNotBeChangeBusinessException());
+                                                                    }
+                                                                    if(state.getName().contains("APROBADO")) {
+                                                                        proposal.setMonthlyFee(calculateMonthlyFee(proposal.getAmount(),
+                                                                                proposalType.getInterestRate(), proposal.getProposalLimit()));
+                                                                    }
+
+                                                                    if(state.getName().contains("RECHAZADO") || state.getName().contains("PENDIENTE_REVISION")){
+                                                                        proposal.setMonthlyFee(null);
+                                                                    }
+                                                                    proposal.setStateId(stateId);
+                                                                    return proposalRepository.save(proposal)
+                                                                            .map(updatedProposal -> {
+                                                                                updatedProposal.setState(state);
+                                                                                return updatedProposal;
+                                                                            });
+                                                                })
+
+                                                        )
 
                                 )
                 );
