@@ -1,0 +1,50 @@
+server:
+  port: 8081
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+  api-docs:
+    path: /v3/api-docs
+spring:
+  application:
+    name: "Proposal-CrediYa"
+  devtools:
+    add-properties: false
+  h2:
+    console:
+      enabled: true
+      path: "/h2"
+  config:
+    activate:
+      on-profile: prod
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "health,prometheus"
+  endpoint:
+    health:
+      probes:
+        enabled: true
+cors:
+  allowed-origins: "http://localhost:4200,http://localhost:8080"
+
+routes:
+  base-path: /api/v1
+  paths:
+    proposals: "/solicitud"
+    states: "/estado"
+    proposalTypes: "/tipo-prestamo"
+
+clients:
+  users: http://${AUTH_SERVICE_URL:authentication}:8080/api/v1/usuarios
+  auth: http://${AUTH_SERVICE_URL:authentication}:8080/api/v1/autenticacion
+
+adapters:
+  r2dbc:
+    host: ${DB_HOST:db}
+    port: ${DB_PORT:5432}
+    database: ${DB_NAME:pragma_db}
+    schema: ${DB_SCHEMA:public}
+    username: ${DB_USER:pragma_user}
+    password: ${DB_PASSWORD:pragma_pass}
