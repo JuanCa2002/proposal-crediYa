@@ -1,5 +1,7 @@
---Table States
-CREATE TABLE states (
+-------------------- TABLES -----------------------
+
+-- Table states
+CREATE TABLE IF NOT EXISTS states (
     id SERIAL PRIMARY KEY,
     name VARCHAR(100) NOT NULL UNIQUE,
     description VARCHAR(255) NOT NULL
@@ -7,24 +9,25 @@ CREATE TABLE states (
 
 -- Default value of States table
 INSERT INTO states (name, description)
-VALUES ("PENDIENTE_REVISION", "Pendiente de Revisión");
+VALUES ('PENDIENTE_REVISION', 'Pendiente de Revisión')
+ON CONFLICT (name) DO NOTHING;
 
---Table Proposal Types
-CREATE TABLE proposal_types (
+-- Table proposal_types
+CREATE TABLE IF NOT EXISTS proposal_types (
     id BIGSERIAL PRIMARY KEY,
-    name VARCHAR(100) NOT NULL,
+    name VARCHAR(100) UNIQUE NOT NULL,
     minimum_amount NUMERIC(12,2) NOT NULL,
     maximum_amount NUMERIC(12,2) NOT NULL,
     interest_rate NUMERIC(3,2) NOT NULL,
     automatic_validation BOOLEAN
 );
 
--- Table Proposals
-CREATE TABLE proposals (
+-- Table proposals
+CREATE TABLE IF NOT EXISTS proposals (
     id BIGSERIAL PRIMARY KEY,
     amount NUMERIC(12,2) NOT NULL,
     base_salary NUMERIC(12,2) NOT NULL,
-    monthly_fee NUMERIC(12,2) NULL,
+    monthly_fee NUMERIC(12,2),
     proposal_limit INTEGER NOT NULL,
     limit_date DATE NOT NULL,
     creation_date DATE NOT NULL,
