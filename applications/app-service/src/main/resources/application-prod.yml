@@ -37,14 +37,24 @@ routes:
     proposalTypes: "/tipo-prestamo"
 
 clients:
-  users: http://${AUTH_SERVICE_URL:authentication}:8080/api/v1/usuarios
-  auth: http://${AUTH_SERVICE_URL:authentication}:8080/api/v1/autenticacion
+  users: http://${AUTH_SERVICE_URL}:8080/api/v1/usuarios
+  auth: http://${AUTH_SERVICE_URL}:8080/api/v1/autenticacion
 
 adapters:
   r2dbc:
-    host: ${DB_HOST:db}
-    port: ${DB_PORT:5432}
-    database: ${DB_NAME:pragma_db}
-    schema: ${DB_SCHEMA:public}
-    username: ${DB_USER:pragma_user}
-    password: ${DB_PASSWORD:pragma_pass}
+    host: ${DB_HOST}
+    port: ${DB_PORT}
+    database: ${DB_NAME}
+    schema: ${DB_SCHEMA}
+    username: ${DB_USER}
+    password: ${DB_PASSWORD}
+
+adapter:
+  sqs:
+    region: ${AWS_SQS_REGION}
+    queueUrl: ${AWS_SQS_URL}
+    endpoint: ${AWS_SQS_ENDPOINT}
+
+aws:
+  accessKeyId: ${AWS_ACCESS_KEY_ID}
+  secretAccessKey: ${AWS_SECRET_ACCESS_KEY_ID}
