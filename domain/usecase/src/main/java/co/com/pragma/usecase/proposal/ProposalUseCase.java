@@ -4,6 +4,7 @@ import co.com.pragma.model.proposal.Proposal;
 import co.com.pragma.model.proposal.gateways.ProposalRepository;
 import co.com.pragma.model.proposaltype.ProposalType;
 import co.com.pragma.model.proposaltype.gateways.ProposalTypeRepository;
+import co.com.pragma.model.sqs.gateways.SQSProposalNotification;
 import co.com.pragma.model.state.State;
 import co.com.pragma.model.state.gateways.StateRepository;
 import co.com.pragma.model.user.gateways.UserRepository;
@@ -22,8 +23,12 @@ public class ProposalUseCase {
     private final StateRepository stateRepository;
     private final ProposalTypeRepository proposalTypeRepository;
     private final UserRepository userRepository;
+    private final SQSProposalNotification sqsProposalNotification;
 
+    private static final String APPROVED_STATE_NAME = "APROBADO";
+    private static final String REJECTED_STATE_NAME = "RECHAZADO";
     private static final String INITIAL_STATE_NAME = "PENDIENTE_REVISION";
+    private static final String ROLE_ADMIN_NAME = "ADMINISTRADOR";
 
     public Mono<Proposal> saveProposal(Proposal proposal, String userName) {
         proposal.setCreationDate(LocalDate.now());
@@ -75,23 +80,32 @@ public class ProposalUseCase {
                                                 .flatMap(proposalType ->
                                                         stateRepository.findById(proposal.getStateId())
                                                                 .flatMap(currentState -> {
-                                                                    if((currentState.getName().contains("APROBADO") ||
-                                                                    currentState.getName().contains("RECHAZADO")) && !role.equals("ADMINISTRADOR")){
+                                                                    if((currentState.getName().contains(APPROVED_STATE_NAME) ||
+                                                                    currentState.getName().contains(REJECTED_STATE_NAME)) && !role.equals(ROLE_ADMIN_NAME)){
                                                                         return Mono.error(new ProposalStateCanNotBeChangeBusinessException());
                                                                     }
-                                                                    if(state.getName().contains("APROBADO")) {
+
+                                                                    if(currentState.getId().equals(state.getId())) {
+                                                                        return Mono.error(new ProposalStateAlreadyTheOneBusinessException(state.getName()));
+                                                                    }
+
+                                                                    if(state.getName().contains(APPROVED_STATE_NAME)) {
                                                                         proposal.setMonthlyFee(calculateMonthlyFee(proposal.getAmount(),
                                                                                 proposalType.getInterestRate(), proposal.getProposalLimit()));
                                                                     }
 
-                                                                    if(state.getName().contains("RECHAZADO") || state.getName().contains("PENDIENTE_REVISION")){
+                                                                    if(state.getName().contains(REJECTED_STATE_NAME) || state.getName().contains(INITIAL_STATE_NAME)){
                                                                         proposal.setMonthlyFee(null);
                                                                     }
                                                                     proposal.setStateId(stateId);
                                                                     return proposalRepository.save(proposal)
-                                                                            .map(updatedProposal -> {
+                                                                            .flatMap(updatedProposal -> {
                                                                                 updatedProposal.setState(state);
-                                                                                return updatedProposal;
+                                                                                if(state.getName().contains(APPROVED_STATE_NAME) || state.getName().contains(REJECTED_STATE_NAME)){
+                                                                                    return sqsProposalNotification.send(updatedProposal)
+                                                                                            .thenReturn(updatedProposal);
+                                                                                }
+                                                                                return Mono.just(updatedProposal);
                                                                             });
                                                                 })
 
