@@ -334,3 +334,6 @@ gradle-app.setting
 # -----
 *.hprof
 build-cache
+
+# Dev application file
+/applications/app-service/src/main/resources/application-dev.yml
