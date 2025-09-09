@@ -15,11 +15,11 @@ ON CONFLICT (name) DO NOTHING;
 -- Table proposal_types
 CREATE TABLE IF NOT EXISTS proposal_types (
     id BIGSERIAL PRIMARY KEY,
-    name VARCHAR(100) UNIQUE NOT NULL,
+    name VARCHAR(100) NOT NULL,
     minimum_amount NUMERIC(12,2) NOT NULL,
     maximum_amount NUMERIC(12,2) NOT NULL,
     interest_rate NUMERIC(3,2) NOT NULL,
-    automatic_validation BOOLEAN
+    automatic_validation BOOLEAN NOT NULL
 );
 
 -- Table proposals
