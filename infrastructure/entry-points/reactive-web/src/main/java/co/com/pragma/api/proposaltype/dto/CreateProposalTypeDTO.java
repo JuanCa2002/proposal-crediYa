@@ -39,4 +39,10 @@ public class CreateProposalTypeDTO {
     @Schema(description = "Interest Rate of the proposal type", example = "0.19")
     private Double interestRate;
 
+    @NotNull
+    @Min(value = 0)
+    @Max(value = 1)
+    @Schema(description = "Automatic Validation of the system about the proposal")
+    private Integer automaticValidation;
+
 }
