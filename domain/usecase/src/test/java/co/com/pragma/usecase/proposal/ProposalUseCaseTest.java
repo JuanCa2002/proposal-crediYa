@@ -4,6 +4,7 @@ import co.com.pragma.model.proposal.Proposal;
 import co.com.pragma.model.proposal.gateways.ProposalRepository;
 import co.com.pragma.model.proposaltype.ProposalType;
 import co.com.pragma.model.proposaltype.gateways.ProposalTypeRepository;
+import co.com.pragma.model.restconsumer.gateways.LambdaLoanPlan;
 import co.com.pragma.model.sqs.gateways.SQSProposalNotification;
 import co.com.pragma.model.state.State;
 import co.com.pragma.model.state.gateways.StateRepository;
@@ -48,10 +49,21 @@ public class ProposalUseCaseTest {
     @Mock
     SQSProposalNotification sqsProposalNotification;
 
+    @Mock
+    LambdaLoanPlan lambdaLoanPlan;
+
     private final Proposal proposal = Proposal.builder()
                 .id(BigInteger.ONE)
                 .amount(3000.0)
                 .userIdentificationNumber("123")
+                .newMonthlyFee(2000.0)
+                .currentMonthlyDebt(40000.0)
+                .monthlyFee(222.0)
+                .allowCapacity(30000.0)
+                .baseSalary(300000.0)
+                .maximumCapacity(70000.0)
+                .finalDecision("APROBADO")
+                .interestRate(0.02)
                 .proposalLimit(4)
                 .limitDate(LocalDate.of(2005, 5, 24))
                 .email("juan@email.com")
@@ -115,12 +127,19 @@ public class ProposalUseCaseTest {
         currentState.setName("PENDIENTE_REVISION");
         when(stateRepository.findById(Mockito.anyInt()))
                 .thenReturn(Mono.just(state))
-                .thenReturn(Mono.just(currentState));;
+                .thenReturn(Mono.just(currentState))
+                .thenReturn(Mono.just(state));
 
         when(proposalTypeRepository.findById(Mockito.anyLong()))
                 .thenReturn(Mono.just(proposalType));
 
         when(proposalRepository.save(Mockito.any(Proposal.class)))
+                .thenReturn(Mono.just(proposal));
+
+        when(proposalRepository.findByEmail(Mockito.anyString()))
+                .thenReturn(Flux.just(proposal));
+
+        when(lambdaLoanPlan.postLambdaLoanPlan(Mockito.any(Proposal.class)))
                 .thenReturn(Mono.just(proposal));
 
         Mono<Proposal> result = proposalUseCase.updateState(proposal.getId(), state.getId(), "ASESOR");
@@ -145,12 +164,19 @@ public class ProposalUseCaseTest {
         currentState.setName("PENDIENTE_REVISION");
         when(stateRepository.findById(Mockito.anyInt()))
                 .thenReturn(Mono.just(state))
-                .thenReturn(Mono.just(currentState));
+                .thenReturn(Mono.just(currentState))
+                .thenReturn(Mono.just(state));
 
         when(proposalTypeRepository.findById(Mockito.anyLong()))
                 .thenReturn(Mono.just(proposalType));
 
         when(proposalRepository.save(Mockito.any(Proposal.class)))
+                .thenReturn(Mono.just(proposal));
+
+        when(proposalRepository.findByEmail(Mockito.anyString()))
+                .thenReturn(Flux.just(proposal));
+
+        when(lambdaLoanPlan.postLambdaLoanPlan(Mockito.any(Proposal.class)))
                 .thenReturn(Mono.just(proposal));
 
         when(sqsProposalNotification.sendNotification(Mockito.any(Proposal.class)))
@@ -161,7 +187,7 @@ public class ProposalUseCaseTest {
         StepVerifier.create(result)
                 .expectNextMatches(proposal ->
                         proposal.getId().equals(BigInteger.ONE) &&
-                                proposal.getStateId().equals(state.getId()) &&
+                                proposal.getStateId().equals(state.getId())  &&
                                 proposal.getMonthlyFee() != null
                 )
                 .verifyComplete();
@@ -179,12 +205,19 @@ public class ProposalUseCaseTest {
         currentState.setName("APROBADO");
         when(stateRepository.findById(Mockito.anyInt()))
                 .thenReturn(Mono.just(state))
-                .thenReturn(Mono.just(currentState));
+                .thenReturn(Mono.just(currentState))
+                .thenReturn(Mono.just(state));
 
         when(proposalTypeRepository.findById(Mockito.anyLong()))
                 .thenReturn(Mono.just(proposalType));
 
         when(proposalRepository.save(Mockito.any(Proposal.class)))
+                .thenReturn(Mono.just(proposal));
+
+        when(proposalRepository.findByEmail(Mockito.anyString()))
+                .thenReturn(Flux.just(proposal));
+
+        when(lambdaLoanPlan.postLambdaLoanPlan(Mockito.any(Proposal.class)))
                 .thenReturn(Mono.just(proposal));
 
         when(sqsProposalNotification.sendNotification(Mockito.any(Proposal.class)))
@@ -202,6 +235,41 @@ public class ProposalUseCaseTest {
     }
 
     @Test
+    void shouldUpdateProposalState_ProposalCanNotChangeManuallyBusinessException() {
+        proposal.setStateId(2);
+        proposal.setFinalDecision("PENDIENTE_REVISION");
+        proposalType.setAutomaticValidation(true);
+        proposal.setProposalType(proposalType);
+        proposal.setProposalTypeId(proposalType.getId());
+        state.setId(1);
+        state.setName("PENDIENTE_REVISION");
+        currentState.setId(2);
+        currentState.setName("PENDIENTE_REVISION");
+
+        when(proposalRepository.findById(Mockito.any(BigInteger.class)))
+                .thenReturn(Mono.just(proposal));
+
+        when(stateRepository.findById(Mockito.anyInt()))
+                .thenReturn(Mono.just(state))
+                .thenReturn(Mono.just(currentState))
+                .thenReturn(Mono.just(state));
+
+        when(proposalTypeRepository.findById(Mockito.anyLong()))
+                .thenReturn(Mono.just(proposalType));
+
+        Mono<Proposal> result = proposalUseCase.updateState(proposal.getId(), state.getId(), "ADMINISTRADOR");
+
+        StepVerifier.create(result)
+                .expectErrorMatches(throwable ->
+                        throwable instanceof ProposalCanNotChangeManuallyBusinessException &&
+                                throwable.getMessage().equals(
+                                        ProposalMessageConstants.PROPOSAL_CAN_CHANGE_STATE_MANUALLY
+                                )
+                )
+                .verify();
+    }
+
+    @Test
     void shouldUpdateProposalState_ProposalStateCanNotBeChangeBusinessException() {
         when(proposalRepository.findById(Mockito.any(BigInteger.class)))
                 .thenReturn(Mono.just(proposal));
@@ -210,9 +278,6 @@ public class ProposalUseCaseTest {
         when(stateRepository.findById(Mockito.anyInt()))
                 .thenReturn(Mono.just(state))
                 .thenReturn(Mono.just(currentState));
-
-        when(proposalTypeRepository.findById(Mockito.anyLong()))
-                .thenReturn(Mono.just(proposalType));
 
         Mono<Proposal> result = proposalUseCase.updateState(proposal.getId(), state.getId(), "ASESOR");
 
@@ -235,9 +300,6 @@ public class ProposalUseCaseTest {
         when(stateRepository.findById(Mockito.anyInt()))
                 .thenReturn(Mono.just(state))
                 .thenReturn(Mono.just(currentState));
-
-        when(proposalTypeRepository.findById(Mockito.anyLong()))
-                .thenReturn(Mono.just(proposalType));
 
         Mono<Proposal> result = proposalUseCase.updateState(proposal.getId(), state.getId(), "ADMINISTRADOR");
 
@@ -323,6 +385,40 @@ public class ProposalUseCaseTest {
 
         when(proposalRepository.save(Mockito.any(Proposal.class)))
                 .thenReturn(Mono.just(proposal));
+
+        Mono<Proposal> result = proposalUseCase.saveProposal(proposal, user.getUserName());
+
+        StepVerifier.create(result)
+                .expectNextMatches(proposal -> proposal.getId().equals(BigInteger.ONE))
+                .verifyComplete();
+    }
+
+    @Test
+    void shouldSaveProposal_WhenIsAutomaticValidation() {
+        proposalType.setAutomaticValidation(true);
+        proposal.setProposalType(proposalType);
+        proposal.setState(state);
+        proposal.setStateId(state.getId());
+        when(stateRepository.findByName(Mockito.anyString()))
+                .thenReturn(Mono.just(state));
+
+        when(stateRepository.findById(Mockito.anyInt()))
+                .thenReturn(Mono.just(state));
+
+        when(proposalTypeRepository.findById(Mockito.anyLong()))
+                .thenReturn(Mono.just(proposalType));
+
+        when(userRepository.findByIdentificationNumber(Mockito.anyString()))
+                .thenReturn(Mono.just(user));
+
+        when(proposalRepository.save(Mockito.any(Proposal.class)))
+                .thenReturn(Mono.just(proposal));
+
+        when(proposalRepository.findByEmail(Mockito.anyString()))
+                .thenReturn(Flux.just(proposal));
+
+        when(sqsProposalNotification.sendRequestAutomaticRevision(Mockito.any(Proposal.class)))
+                .thenReturn(Mono.just("ok"));
 
         Mono<Proposal> result = proposalUseCase.saveProposal(proposal, user.getUserName());
 
