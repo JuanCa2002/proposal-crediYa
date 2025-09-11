@@ -9,7 +9,10 @@ CREATE TABLE IF NOT EXISTS states (
 
 -- Default value of States table
 INSERT INTO states (name, description)
-VALUES ('PENDIENTE_REVISION', 'Pendiente de Revisión')
+VALUES ('APROBADO', 'Estado de aprobado'),
+       ('RECHAZADO', 'Estado de rechazado'),
+       ('PENDIENTE_REVISION', 'Pendiente de Revisión'),
+       ('REVISION_MANUAL', 'Estado de revisión manual')
 ON CONFLICT (name) DO NOTHING;
 
 -- Table proposal_types
