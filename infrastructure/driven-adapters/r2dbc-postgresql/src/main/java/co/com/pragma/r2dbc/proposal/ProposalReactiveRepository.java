@@ -32,4 +32,6 @@ public interface ProposalReactiveRepository extends ReactiveCrudRepository<Propo
                                         @Param("limit") int limit,
                                         @Param("offset") int offset);
 
+    Flux<ProposalEntity> findByEmail(String email);
+
 }

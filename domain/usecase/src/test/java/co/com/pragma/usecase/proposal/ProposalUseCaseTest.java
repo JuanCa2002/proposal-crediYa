@@ -153,7 +153,7 @@ public class ProposalUseCaseTest {
         when(proposalRepository.save(Mockito.any(Proposal.class)))
                 .thenReturn(Mono.just(proposal));
 
-        when(sqsProposalNotification.send(Mockito.any(Proposal.class)))
+        when(sqsProposalNotification.sendNotification(Mockito.any(Proposal.class)))
                 .thenReturn(Mono.just("good"));
 
         Mono<Proposal> result = proposalUseCase.updateState(proposal.getId(), state.getId(), "ASESOR");
@@ -187,7 +187,7 @@ public class ProposalUseCaseTest {
         when(proposalRepository.save(Mockito.any(Proposal.class)))
                 .thenReturn(Mono.just(proposal));
 
-        when(sqsProposalNotification.send(Mockito.any(Proposal.class)))
+        when(sqsProposalNotification.sendNotification(Mockito.any(Proposal.class)))
                 .thenReturn(Mono.just("good"));
 
         Mono<Proposal> result = proposalUseCase.updateState(proposal.getId(), state.getId(), "ADMINISTRADOR");

@@ -4,5 +4,6 @@ import co.com.pragma.model.proposal.Proposal;
 import reactor.core.publisher.Mono;
 
 public interface SQSProposalNotification {
-    Mono<String> send(Proposal payload);
+    Mono<String> sendNotification(Proposal payload);
+    Mono<String> sendRequestAutomaticRevision(Proposal proposal);
 }
