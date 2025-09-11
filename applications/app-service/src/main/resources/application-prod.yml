@@ -50,13 +50,33 @@ adapters:
     password: ${DB_PASSWORD}
 
 adapter:
+  restconsumer:
+    timeout: 5000
+    url: ${URL_LAMBDA_LOAN_PLAN}
   sqs:
     region: ${AWS_SQS_REGION}
     queueSendNotificationUrl: ${AWS_SQS_SEND_NOTIFICATION_URL}
     queueAutomaticValidationUrl: ${AWS_SQS_AUTOMATIC_VALIDATION_URL}
     queueAutomaticEvaluationResponsesUrl: ${AWS_SQS_AUTOMATIC_EVALUATION_RESPONSES_URL}
     endpoint: ${AWS_SQS_ENDPOINT}
+  management:
+    health:
+      circuitbreakers:
+        enabled: true
+  resilience4j:
+    circuitbreaker:
+      instances:
+        postLambdaLoanPlan:
+          registerHealthIndicator: true
+          failureRateThreshold: 50
+          slowCallRateThreshold: 50
+          slowCallDurationThreshold: "2s"
+          permittedNumberOfCallsInHalfOpenState: 3
+          slidingWindowSize: 10
+          minimumNumberOfCalls: 10
+          waitDurationInOpenState: "10s"
 
 aws:
   accessKeyId: ${AWS_ACCESS_KEY_ID}
   secretAccessKey: ${AWS_SECRET_ACCESS_KEY_ID}
+  region: ${AWS_REGION}

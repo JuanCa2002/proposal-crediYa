@@ -10,6 +10,7 @@ import co.com.pragma.model.user.User;
 import co.com.pragma.model.user.gateways.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -17,12 +18,19 @@ import reactor.core.publisher.Mono;
 
 @Slf4j
 @Component
-@RequiredArgsConstructor
 public class ExternalUserHandler implements UserRepository {
 
     private final ClientUsersBasePath usersBaseUrl;
     private final WebClient client;
     private final UserMapper mapper;
+
+    public ExternalUserHandler(ClientUsersBasePath clientUsersBasePath,
+                               @Qualifier("webClient") WebClient client,
+                               UserMapper userMapper){
+        this.client = client;
+        this.mapper = userMapper;
+        this.usersBaseUrl = clientUsersBasePath;
+    }
 
     public Mono<User> findByIdentificationNumber(String identificationNumber) {
         log.info("[ExternalUserHandler] Starting request to external Users service for identification number: {}", identificationNumber);
