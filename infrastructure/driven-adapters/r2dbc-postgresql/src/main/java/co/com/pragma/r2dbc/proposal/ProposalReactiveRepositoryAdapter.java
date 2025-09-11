@@ -43,4 +43,11 @@ public class ProposalReactiveRepositoryAdapter extends ReactiveAdapterOperations
                 .as(txOperator::transactional);
     }
 
+    @Override
+    public Flux<Proposal> findByEmail(String email) {
+        return repository.findByEmail(email)
+                .map(entry -> mapper.map(entry, Proposal.class))
+                .as(txOperator::transactional);
+    }
+
 }

@@ -19,4 +19,5 @@ public interface ProposalRepository {
                                   int limit,
                                   int offset);
     Mono<Proposal> findById(BigInteger id);
+    Flux<Proposal> findByEmail(String email);
 }
