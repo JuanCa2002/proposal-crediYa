@@ -1,10 +1,10 @@
 package co.com.pragma.usecase.proposal;
 
-import co.com.pragma.model.loan.Loan;
 import co.com.pragma.model.proposal.Proposal;
 import co.com.pragma.model.proposal.gateways.ProposalRepository;
 import co.com.pragma.model.proposaltype.ProposalType;
 import co.com.pragma.model.proposaltype.gateways.ProposalTypeRepository;
+import co.com.pragma.model.restconsumer.gateways.LambdaLoanPlan;
 import co.com.pragma.model.sqs.gateways.SQSProposalNotification;
 import co.com.pragma.model.state.State;
 import co.com.pragma.model.state.gateways.StateRepository;
@@ -16,8 +16,6 @@ import reactor.core.publisher.Mono;
 
 import java.math.BigInteger;
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.List;
 
 @RequiredArgsConstructor
 public class ProposalUseCase {
@@ -27,6 +25,7 @@ public class ProposalUseCase {
     private final ProposalTypeRepository proposalTypeRepository;
     private final UserRepository userRepository;
     private final SQSProposalNotification sqsProposalNotification;
+    private final LambdaLoanPlan lambdaLoanPlan;
 
     private static final String APPROVED_STATE_NAME = "APROBADO";
     private static final String REJECTED_STATE_NAME = "RECHAZADO";
@@ -138,21 +137,41 @@ public class ProposalUseCase {
                 });
     }
 
+    private Mono<ProposalType> validateIfIsAutomaticValidation(ProposalType proposalType, String stateName){
+        if(proposalType.getAutomaticValidation() && stateName.equals(INITIAL_STATE_NAME)){
+            Mono.error(new ProposalCanNotChangeManuallyBusinessException());
+        }
+        return Mono.just(proposalType);
+    }
+
     private Mono<Proposal> applyStateChanges(Proposal proposal, State newState) {
         return proposalTypeRepository.findById(proposal.getProposalTypeId())
+                .flatMap(proposalType -> validateIfIsAutomaticValidation(proposalType, newState.getName()))
                 .flatMap(proposalType -> {
                     proposal.setState(newState);
                     proposal.setStateId(newState.getId());
                     proposal.setInterestRate(proposalType.getInterestRate());
                     proposal.setFinalDecision(newState.getName());
                     return calculateCurrentDebt(proposal)
-                            .flatMap(this::calculateMaxCapacity)
-                            .flatMap(this::calculateAllowCapacity)
-                            .flatMap(this::calculateNewQuote)
-                            .flatMap(this::calculateLoanPlan)
+                            .flatMap(lambdaLoanPlan::postLambdaLoanPlan)
+                            .flatMap(result -> mergeProposals(proposal, result))
                             .flatMap(proposalRepository::save)
                             .flatMap(savedProposal -> sendNotificationIfRequired(proposal, newState));
                 });
+    }
+
+    private Mono<Proposal> mergeProposals(Proposal currentProposal, Proposal result){
+        currentProposal.setMaximumCapacity(result.getMaximumCapacity());
+        currentProposal.setAllowCapacity(result.getAllowCapacity());
+        currentProposal.setNewMonthlyFee(result.getNewMonthlyFee());
+        if(currentProposal.getState().getName().equals(APPROVED_STATE_NAME)) {
+            currentProposal.setMonthlyFee(result.getNewMonthlyFee());
+        } else {
+            currentProposal.setMonthlyFee(null);
+        }
+        currentProposal.setLoanPlan(result.getLoanPlan());
+        currentProposal.setCurrentMonthlyDebt(result.getCurrentMonthlyDebt());
+        return Mono.just(currentProposal);
     }
 
     private Mono<Proposal> sendNotificationIfRequired(Proposal proposal, State state) {
@@ -178,66 +197,5 @@ public class ProposalUseCase {
                 ? Mono.empty()
                 : Mono.error(new ProposalAmountDoesNotMatchTypeBusinessException(proposalType.getName(),
                 proposalType.getMinimumAmount(), proposalType.getMaximumAmount()));
-    }
-
-    private double calculateMonthlyFee(double amount, double yearlyRate, int months) {
-        double i = yearlyRate / 12.0;
-        return (amount * i) / (1 - Math.pow(1 + i, -months));
-    }
-
-    private Mono<Proposal> calculateMaxCapacity(Proposal proposal){
-        proposal.setMaximumCapacity(proposal.getBaseSalary() * 0.35);
-        return Mono.just(proposal);
-    }
-
-    private Mono<Proposal> calculateAllowCapacity(Proposal proposal){
-        proposal.setAllowCapacity(proposal.getMaximumCapacity() - proposal.getCurrentMonthlyDebt());
-        return Mono.just(proposal);
-    }
-
-    private Mono<Proposal> calculateNewQuote(Proposal proposal) {
-        double i = proposal.getInterestRate();
-        int n = proposal.getProposalLimit();
-        proposal.setMonthlyFee(proposal.getAmount() * i * Math.pow(1 + i, n) / (Math.pow(1 + i, n) - 1));
-        proposal.setNewMonthlyFee(proposal.getMonthlyFee());
-        if (REJECTED_STATE_NAME.equals(proposal.getState().getName()) ||
-                INITIAL_STATE_NAME.equals(proposal.getState().getName())) {
-            proposal.setMonthlyFee(null);
-        }
-        return Mono.just(proposal);
-    }
-
-    private Mono<Proposal> calculateLoanPlan(Proposal proposal) {
-        if(proposal.getFinalDecision().equals(APPROVED_STATE_NAME)){
-            double balance = proposal.getAmount();
-            double monthlyFee = proposal.getNewMonthlyFee();
-            double interestRate = proposal.getInterestRate();
-            int months = proposal.getProposalLimit();
-
-            List<Loan> plan = new ArrayList<>();
-
-            for (int month = 1; month <= months; month++) {
-                double interestPayment = balance * interestRate;
-                double capitalPayment = monthlyFee - interestPayment;
-                balance -= capitalPayment;
-
-                Loan loan = new Loan();
-                loan.setQuoteNumber(month);
-                loan.setTotalQuote(round(monthlyFee));
-                loan.setInterests(round(interestPayment));
-                loan.setCapital(round(capitalPayment));
-                loan.setRemainingBalance(round(Math.max(balance, 0)));
-
-                plan.add(loan);
-            }
-
-            proposal.setLoanPlan(plan);
-        }
-        return Mono.just(proposal);
-    }
-
-    private double round(double value) {
-        double scale = Math.pow(10, 2);
-        return Math.round(value * scale) / scale;
     }
 }
