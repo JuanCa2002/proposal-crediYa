@@ -138,8 +138,16 @@ public class ProposalUseCase {
                 });
     }
 
+    private Mono<ProposalType> validateIfIsAutomaticValidation(ProposalType proposalType, String stateName){
+        if(proposalType.getAutomaticValidation() && stateName.equals(INITIAL_STATE_NAME)){
+            Mono.error(new ProposalCanNotChangeManuallyBusinessException());
+        }
+        return Mono.just(proposalType);
+    }
+
     private Mono<Proposal> applyStateChanges(Proposal proposal, State newState) {
         return proposalTypeRepository.findById(proposal.getProposalTypeId())
+                .flatMap(proposalType -> validateIfIsAutomaticValidation(proposalType, newState.getName()))
                 .flatMap(proposalType -> {
                     proposal.setState(newState);
                     proposal.setStateId(newState.getId());
