@@ -5,6 +5,6 @@ import co.com.pragma.usecase.proposal.constants.ProposalMessageConstants;
 
 public class ProposalCanNotChangeManuallyBusinessException extends BusinessException {
     public ProposalCanNotChangeManuallyBusinessException() {
-        super(ProposalMessageConstants.PROPOSAL_STATE_CAN_NOT_BE_CHANGE);
+        super(ProposalMessageConstants.PROPOSAL_CAN_CHANGE_STATE_MANUALLY);
     }
 }
