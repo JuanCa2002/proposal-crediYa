@@ -30,6 +30,7 @@ public class ProposalUseCase {
     private static final String APPROVED_STATE_NAME = "APROBADO";
     private static final String REJECTED_STATE_NAME = "RECHAZADO";
     private static final String INITIAL_STATE_NAME = "PENDIENTE_REVISION";
+    private static final String MANUAL_REVISION_STATE_NAME = "REVISION_MANUAL";
     private static final String ROLE_ADMIN_NAME = "ADMINISTRADOR";
 
     public Mono<Proposal> saveProposal(Proposal proposal, String userName) {
@@ -123,6 +124,9 @@ public class ProposalUseCase {
     private Mono<State> validateStateChange(Proposal proposal, State newState, String role) {
         return stateRepository.findById(proposal.getStateId())
                 .flatMap(currentState -> {
+                    if(MANUAL_REVISION_STATE_NAME.equals(newState.getName())){
+                        return Mono.error(new ProposalManualRevisionJustForAutomaticEvaluationBusinessException());
+                    }
                     if ((APPROVED_STATE_NAME.equals(currentState.getName()) ||
                             REJECTED_STATE_NAME.equals(currentState.getName())) &&
                             !ROLE_ADMIN_NAME.equals(role)) {
