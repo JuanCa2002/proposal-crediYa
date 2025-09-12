@@ -12,4 +12,5 @@ public class ProposalMessageConstants {
     public static final String PROPOSAL_STATE_ALREADY_IS_THE_SELECTED_ONE = "El estado de la solicitud ya es {0}";
     public static final String STATE_BY_NAME_NOT_FOUND_EXCEPTION = "No se encontró un estado con el nombre {0}";
     public static final String PROPOSAL_CAN_CHANGE_STATE_MANUALLY = "No se puede actualizar el estado de esta solicitud ya que esta configurada para revisión automatica";
+    public static final String PROPOSAL_MANUAL_REVISION_JUST_FOR_AUTOMATIC_VALIDATION = "El estado REVISION MANUAL solo es aplicable luego de que se realice la validación automatica";
 }

@@ -270,6 +270,33 @@ public class ProposalUseCaseTest {
     }
 
     @Test
+    void shouldUpdateProposalState_ProposalManualRevisionJustForAutomaticEvaluationBusinessException() {
+        proposal.setStateId(2);
+        when(proposalRepository.findById(Mockito.any(BigInteger.class)))
+                .thenReturn(Mono.just(proposal));
+
+        state.setId(1);
+        currentState.setId(2);
+        state.setName("REVISION_MANUAL");
+        currentState.setName("PENDIENTE_REVISION");
+        when(stateRepository.findById(Mockito.anyInt()))
+                .thenReturn(Mono.just(state))
+                .thenReturn(Mono.just(currentState))
+                .thenReturn(Mono.just(state));
+
+        Mono<Proposal> result = proposalUseCase.updateState(proposal.getId(), state.getId(), "ASESOR");
+
+        StepVerifier.create(result)
+                .expectErrorMatches(throwable ->
+                        throwable instanceof ProposalManualRevisionJustForAutomaticEvaluationBusinessException &&
+                                throwable.getMessage().equals(
+                                        ProposalMessageConstants.PROPOSAL_MANUAL_REVISION_JUST_FOR_AUTOMATIC_VALIDATION
+                                )
+                )
+                .verify();
+    }
+
+    @Test
     void shouldUpdateProposalState_ProposalStateCanNotBeChangeBusinessException() {
         when(proposalRepository.findById(Mockito.any(BigInteger.class)))
                 .thenReturn(Mono.just(proposal));

@@ -63,6 +63,7 @@ public class SQSSender implements SQSProposalNotification {
                         "\"finalDecision\":\"%s\"," +
                         "\"id\":%d," +
                         "\"amount\":%.2f," +
+                        "\"interestRate\":%.2f," +
                         "\"baseSalary\":%.2f," +
                         "\"currentMonthlyDebt\":%.2f," +
                         "\"maximumCapacity\":%.2f," +
@@ -74,6 +75,7 @@ public class SQSSender implements SQSProposalNotification {
                 proposal.getFinalDecision(),
                 proposal.getId(),
                 proposal.getAmount(),
+                proposal.getInterestRate(),
                 proposal.getBaseSalary(),
                 proposal.getCurrentMonthlyDebt(),
                 proposal.getMaximumCapacity(),
