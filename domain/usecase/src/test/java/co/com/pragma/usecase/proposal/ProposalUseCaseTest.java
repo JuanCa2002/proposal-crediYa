@@ -179,6 +179,9 @@ public class ProposalUseCaseTest {
         when(lambdaLoanPlan.postLambdaLoanPlan(Mockito.any(Proposal.class)))
                 .thenReturn(Mono.just(proposal));
 
+        when(sqsProposalNotification.sendMetricsToReport(Mockito.anyDouble()))
+                .thenReturn(Mono.just("good"));
+
         when(sqsProposalNotification.sendNotification(Mockito.any(Proposal.class)))
                 .thenReturn(Mono.just("good"));
 
