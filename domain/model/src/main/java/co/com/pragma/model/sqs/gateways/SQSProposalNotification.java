@@ -6,4 +6,5 @@ import reactor.core.publisher.Mono;
 public interface SQSProposalNotification {
     Mono<String> sendNotification(Proposal payload);
     Mono<String> sendRequestAutomaticRevision(Proposal proposal);
+    Mono<String> sendMetricsToReport(Double extraApprovedAmount);
 }

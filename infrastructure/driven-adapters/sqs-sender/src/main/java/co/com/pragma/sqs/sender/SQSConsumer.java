@@ -91,7 +91,10 @@ public class SQSConsumer {
                     if(state.getName().equals("APROBADO")){
                         proposal.setMonthlyFee(newMonthlyFee);
                     }
-                    return Mono.just(proposal);
+                    return  state.getName().equals("APROBADO") ?
+                            sqsProposalNotification.sendMetricsToReport(proposal.getAmount())
+                                            .thenReturn(proposal):
+                            Mono.just(proposal);
                 });
     }
 }
