@@ -8,5 +8,6 @@ public record SQSSenderProperties(
      String queueSendNotificationUrl,
      String queueAutomaticValidationUrl,
      String queueAutomaticEvaluationResponsesUrl,
+     String queueReportMetrics,
      String endpoint){
 }

@@ -38,6 +38,15 @@ public class SQSSender implements SQSProposalNotification {
                 .map(SendMessageResponse::messageId);
     }
 
+    @Override
+    public Mono<String> sendMetricsToReport(Double extraApprovedAmount) {
+        return Mono.fromCallable(() -> buildReportMetricRequest(extraApprovedAmount))
+                .flatMap(request -> Mono.fromFuture(client.sendMessage(request)))
+                .doOnNext(response -> log.info("[SQSSender - ReportMetricsSQS] Message sent to report metrics {}", response.messageId()))
+                .doOnError(error -> log.error("[SQSSender - ReportMetricsSQS] Error while sending metric to sqs and with error", error))
+                .map(SendMessageResponse::messageId);
+    }
+
     private SendMessageRequest buildAutomaticValidationRequest(Proposal proposal) {
         String messageBody = String.format(
                 Locale.US,
@@ -51,6 +60,15 @@ public class SQSSender implements SQSProposalNotification {
                 proposal.getBaseSalary()
         );
         return sendMessageRequest(messageBody, properties.queueAutomaticValidationUrl());
+    }
+
+    private SendMessageRequest buildReportMetricRequest(Double extraApprovedAmount) {
+        String messageBody = String.format(
+                Locale.US,
+                "{\"amount\":%.2f}",
+                extraApprovedAmount
+        );
+        return sendMessageRequest(messageBody, properties.queueReportMetrics());
     }
 
     private SendMessageRequest buildRequest(Proposal proposal) {

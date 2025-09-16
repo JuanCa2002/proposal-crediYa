@@ -175,7 +175,10 @@ public class ProposalUseCase {
         }
         currentProposal.setLoanPlan(result.getLoanPlan());
         currentProposal.setCurrentMonthlyDebt(result.getCurrentMonthlyDebt());
-        return Mono.just(currentProposal);
+        return currentProposal.getState().getName().equals(APPROVED_STATE_NAME) ?
+                sqsProposalNotification.sendMetricsToReport(currentProposal.getAmount())
+                                .thenReturn(currentProposal) :
+                Mono.just(currentProposal);
     }
 
     private Mono<Proposal> sendNotificationIfRequired(Proposal proposal, State state) {
