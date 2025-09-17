@@ -19,16 +19,14 @@ RUN ./gradlew :app-service:clean :app-service:bootJar -x test -x validateStructu
 FROM openjdk:17-jdk-slim
 WORKDIR /app
 
-# Instalar cliente de PostgreSQL
+# Instalar cliente de PostgreSQL (opcional, si lo usas en la app)
 RUN apt-get update && apt-get install -y postgresql-client && rm -rf /var/lib/apt/lists/*
 
 # Copiar el jar construido desde el módulo correcto
 COPY --from=builder /app/applications/app-service/build/libs/*.jar app.jar
 
-# Copiar script SQL
-COPY local_environment/script_database.sql /docker-entrypoint-initdb.d/script_database.sql
+# Exponer puerto
+EXPOSE 8080
 
-EXPOSE 8081
-
-# Ejecutar script en la DB antes de levantar el micro
-ENTRYPOINT ["sh", "-c", "PGPASSWORD=$DB_PASSWORD psql -h $DB_HOST -U $DB_USER -d $DB_NAME -f /docker-entrypoint-initdb.d/script_database.sql && java -jar app.jar"]
+# Arrancar microservicio
+ENTRYPOINT ["java", "-jar", "app.jar"]
