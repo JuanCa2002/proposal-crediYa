@@ -58,7 +58,7 @@ adapter:
     queueSendNotificationUrl: ${AWS_SQS_SEND_NOTIFICATION_URL}
     queueAutomaticValidationUrl: ${AWS_SQS_AUTOMATIC_VALIDATION_URL}
     queueAutomaticEvaluationResponsesUrl: ${AWS_SQS_AUTOMATIC_EVALUATION_RESPONSES_URL}
-    queueReportMetrics: ${AWS_SQS_REPORT_METRICS}
+    queueReportMetrics: ${AWS_SQS_REPORT_METRICS_URL}
     endpoint: ${AWS_SQS_ENDPOINT}
   management:
     health:
