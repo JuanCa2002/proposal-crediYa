@@ -1,5 +1,11 @@
 package co.com.pragma.config;
 
+import co.com.pragma.model.proposal.gateways.ProposalRepository;
+import co.com.pragma.model.proposaltype.gateways.ProposalTypeRepository;
+import co.com.pragma.model.restconsumer.gateways.LambdaLoanPlan;
+import co.com.pragma.model.sqs.gateways.SQSProposalNotification;
+import co.com.pragma.model.state.gateways.StateRepository;
+import co.com.pragma.model.user.gateways.UserRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.context.annotation.Bean;
@@ -29,6 +35,36 @@ public class UseCasesConfigTest {
     @Configuration
     @Import(UseCasesConfig.class)
     static class TestConfig {
+
+        @Bean
+        public ProposalRepository proposalRepository() {
+            return org.mockito.Mockito.mock(ProposalRepository.class);
+        }
+
+        @Bean
+        public ProposalTypeRepository proposalTypeRepository() {
+            return org.mockito.Mockito.mock(ProposalTypeRepository.class);
+        }
+
+        @Bean
+        public StateRepository stateRepository() {
+            return org.mockito.Mockito.mock(StateRepository.class);
+        }
+
+        @Bean
+        public UserRepository userRepository() {
+            return org.mockito.Mockito.mock(UserRepository.class);
+        }
+
+        @Bean
+        public SQSProposalNotification sQSProposalNotification() {
+            return org.mockito.Mockito.mock(SQSProposalNotification.class);
+        }
+
+        @Bean
+        public LambdaLoanPlan lambdaLoanPlan() {
+            return org.mockito.Mockito.mock(LambdaLoanPlan.class);
+        }
 
         @Bean
         public MyUseCase myUseCase() {
