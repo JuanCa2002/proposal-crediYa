@@ -48,6 +48,7 @@ adapters:
     schema: ${DB_SCHEMA}
     username: ${DB_USER}
     password: ${DB_PASSWORD}
+    ssl: ${DB_SSL}
 
 adapter:
   restconsumer:
@@ -81,3 +82,4 @@ aws:
   accessKeyId: ${AWS_ACCESS_KEY_ID}
   secretAccessKey: ${AWS_SECRET_ACCESS_KEY_ID}
   region: ${AWS_REGION}
+  secretName: ${AWS_SECRET_NAME}
