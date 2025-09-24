@@ -1,4 +1,4 @@
-package co.com.pragma.consumer;
+package co.com.pragma.consumer.lambdaloanplan.dto;
 
 import lombok.*;
 
