@@ -4,6 +4,7 @@ import co.com.pragma.model.proposal.Proposal;
 import co.com.pragma.model.proposal.gateways.ProposalRepository;
 import co.com.pragma.model.proposaltype.ProposalType;
 import co.com.pragma.model.proposaltype.gateways.ProposalTypeRepository;
+import co.com.pragma.model.restconsumer.gateways.LambdaInsertProposal;
 import co.com.pragma.model.restconsumer.gateways.LambdaLoanPlan;
 import co.com.pragma.model.sqs.gateways.SQSProposalNotification;
 import co.com.pragma.model.state.State;
@@ -16,6 +17,7 @@ import reactor.core.publisher.Mono;
 
 import java.math.BigInteger;
 import java.time.LocalDate;
+import java.util.concurrent.atomic.AtomicReference;
 
 @RequiredArgsConstructor
 public class ProposalUseCase {
@@ -26,6 +28,7 @@ public class ProposalUseCase {
     private final UserRepository userRepository;
     private final SQSProposalNotification sqsProposalNotification;
     private final LambdaLoanPlan lambdaLoanPlan;
+    private final LambdaInsertProposal lambdaInsertProposal;
 
     private static final String APPROVED_STATE_NAME = "APROBADO";
     private static final String REJECTED_STATE_NAME = "RECHAZADO";
@@ -38,6 +41,7 @@ public class ProposalUseCase {
         return stateRepository.findByName(INITIAL_STATE_NAME)
                 .switchIfEmpty(Mono.error(new InitialStateNotFound(INITIAL_STATE_NAME)))
                 .flatMap(state -> {
+                    proposal.setState(state);
                     proposal.setStateId(state.getId());
                     return proposalTypeRepository.findById(proposal.getProposalTypeId())
                             .switchIfEmpty(Mono.error(new ProposalTypeByIdNotFoundException(proposal.getProposalTypeId())));
@@ -53,7 +57,8 @@ public class ProposalUseCase {
                     return proposalRepository.save(proposal)
                                     .flatMap(savedProposal -> {
                                         proposal.setId(savedProposal.getId());
-                                        return validateSendAutomaticValidation(proposal);
+                                        return validateSendAutomaticValidation(proposal)
+                                                .flatMap(this::insertProposalToReport);
                                     });
 
                 });
@@ -66,6 +71,11 @@ public class ProposalUseCase {
                     .thenReturn(proposal);
         }
         return Mono.just(proposal);
+    }
+
+    private Mono<Proposal> insertProposalToReport(Proposal proposal){
+        return lambdaInsertProposal.insertProposal(proposal)
+                .thenReturn(proposal);
     }
 
     private Mono<Proposal> calculateCurrentDebt(Proposal proposal) {
@@ -149,9 +159,11 @@ public class ProposalUseCase {
     }
 
     private Mono<Proposal> applyStateChanges(Proposal proposal, State newState) {
+        AtomicReference<ProposalType> foundProposalType = new AtomicReference<>();
         return proposalTypeRepository.findById(proposal.getProposalTypeId())
                 .flatMap(proposalType -> validateIfIsAutomaticValidation(proposalType, newState.getName()))
                 .flatMap(proposalType -> {
+                    foundProposalType.set(proposalType);
                     proposal.setState(newState);
                     proposal.setStateId(newState.getId());
                     proposal.setInterestRate(proposalType.getInterestRate());
@@ -160,7 +172,12 @@ public class ProposalUseCase {
                             .flatMap(lambdaLoanPlan::postLambdaLoanPlan)
                             .flatMap(result -> mergeProposals(proposal, result))
                             .flatMap(proposalRepository::save)
-                            .flatMap(savedProposal -> sendNotificationIfRequired(proposal, newState));
+                            .flatMap(savedProposal -> sendNotificationIfRequired(proposal, newState))
+                            .flatMap(newProposal -> {
+                                proposal.setProposalType(foundProposalType.get());
+                                proposal.setInterestRate(proposal.getInterestRate());
+                                return insertProposalToReport(proposal);
+                            });
                 });
     }
 

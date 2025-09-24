@@ -2,6 +2,7 @@ package co.com.pragma.config;
 
 import co.com.pragma.model.proposal.gateways.ProposalRepository;
 import co.com.pragma.model.proposaltype.gateways.ProposalTypeRepository;
+import co.com.pragma.model.restconsumer.gateways.LambdaInsertProposal;
 import co.com.pragma.model.restconsumer.gateways.LambdaLoanPlan;
 import co.com.pragma.model.sqs.gateways.SQSProposalNotification;
 import co.com.pragma.model.state.gateways.StateRepository;
@@ -35,6 +36,11 @@ public class UseCasesConfigTest {
     @Configuration
     @Import(UseCasesConfig.class)
     static class TestConfig {
+
+        @Bean
+        public LambdaInsertProposal lambdaInsertProposal() {
+            return org.mockito.Mockito.mock(LambdaInsertProposal.class);
+        }
 
         @Bean
         public ProposalRepository proposalRepository() {

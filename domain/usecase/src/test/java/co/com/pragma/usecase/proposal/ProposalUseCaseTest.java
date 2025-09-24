@@ -4,6 +4,7 @@ import co.com.pragma.model.proposal.Proposal;
 import co.com.pragma.model.proposal.gateways.ProposalRepository;
 import co.com.pragma.model.proposaltype.ProposalType;
 import co.com.pragma.model.proposaltype.gateways.ProposalTypeRepository;
+import co.com.pragma.model.restconsumer.gateways.LambdaInsertProposal;
 import co.com.pragma.model.restconsumer.gateways.LambdaLoanPlan;
 import co.com.pragma.model.sqs.gateways.SQSProposalNotification;
 import co.com.pragma.model.state.State;
@@ -51,6 +52,9 @@ public class ProposalUseCaseTest {
 
     @Mock
     LambdaLoanPlan lambdaLoanPlan;
+
+    @Mock
+    LambdaInsertProposal lambdaInsertProposal;
 
     private final Proposal proposal = Proposal.builder()
                 .id(BigInteger.ONE)
@@ -139,6 +143,9 @@ public class ProposalUseCaseTest {
         when(proposalRepository.findByEmail(Mockito.anyString()))
                 .thenReturn(Flux.just(proposal));
 
+        when(lambdaInsertProposal.insertProposal(Mockito.any(Proposal.class)))
+                .thenReturn(Mono.empty());
+
         when(lambdaLoanPlan.postLambdaLoanPlan(Mockito.any(Proposal.class)))
                 .thenReturn(Mono.just(proposal));
 
@@ -178,6 +185,9 @@ public class ProposalUseCaseTest {
 
         when(lambdaLoanPlan.postLambdaLoanPlan(Mockito.any(Proposal.class)))
                 .thenReturn(Mono.just(proposal));
+
+        when(lambdaInsertProposal.insertProposal(Mockito.any(Proposal.class)))
+                .thenReturn(Mono.empty());
 
         when(sqsProposalNotification.sendMetricsToReport(Mockito.anyDouble()))
                 .thenReturn(Mono.just("good"));
@@ -225,6 +235,9 @@ public class ProposalUseCaseTest {
 
         when(sqsProposalNotification.sendNotification(Mockito.any(Proposal.class)))
                 .thenReturn(Mono.just("good"));
+
+        when(lambdaInsertProposal.insertProposal(Mockito.any(Proposal.class)))
+                .thenReturn(Mono.empty());
 
         Mono<Proposal> result = proposalUseCase.updateState(proposal.getId(), state.getId(), "ADMINISTRADOR");
 
@@ -413,6 +426,9 @@ public class ProposalUseCaseTest {
         when(userRepository.findByIdentificationNumber(Mockito.anyString()))
                 .thenReturn(Mono.just(user));
 
+        when(lambdaInsertProposal.insertProposal(Mockito.any(Proposal.class)))
+                .thenReturn(Mono.empty());
+
         when(proposalRepository.save(Mockito.any(Proposal.class)))
                 .thenReturn(Mono.just(proposal));
 
@@ -446,6 +462,9 @@ public class ProposalUseCaseTest {
 
         when(proposalRepository.findByEmail(Mockito.anyString()))
                 .thenReturn(Flux.just(proposal));
+
+        when(lambdaInsertProposal.insertProposal(Mockito.any(Proposal.class)))
+                .thenReturn(Mono.empty());
 
         when(sqsProposalNotification.sendRequestAutomaticRevision(Mockito.any(Proposal.class)))
                 .thenReturn(Mono.just("ok"));

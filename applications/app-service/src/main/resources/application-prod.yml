@@ -53,7 +53,10 @@ adapters:
 adapter:
   restconsumer:
     timeout: 5000
-    url: ${URL_LAMBDA_LOAN_PLAN}
+    loanplan:
+      url: ${URL_LAMBDA_LOAN_PLAN}
+    insertproposal:
+      url: ${URL_LAMBDA_INSERT_PROPOSAL}
   sqs:
     region: ${AWS_SQS_REGION}
     queueSendNotificationUrl: ${AWS_SQS_SEND_NOTIFICATION_URL}
