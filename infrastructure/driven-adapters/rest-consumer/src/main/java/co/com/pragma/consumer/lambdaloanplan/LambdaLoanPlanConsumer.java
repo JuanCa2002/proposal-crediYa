@@ -1,6 +1,8 @@
-package co.com.pragma.consumer;
+package co.com.pragma.consumer.lambdaloanplan;
 
-import co.com.pragma.consumer.mapper.LambdaMapper;
+import co.com.pragma.consumer.lambdaloanplan.dto.LambdaLoanPlanRequest;
+import co.com.pragma.consumer.lambdaloanplan.dto.LambdaLoanPlanResponse;
+import co.com.pragma.consumer.lambdaloanplan.mapper.LambdaMapper;
 import co.com.pragma.model.proposal.Proposal;
 import co.com.pragma.model.restconsumer.gateways.LambdaLoanPlan;
 import com.fasterxml.jackson.databind.ObjectMapper;

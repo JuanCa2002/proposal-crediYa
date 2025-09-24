@@ -1,10 +1,10 @@
 package co.com.pragma.consumer.config;
 
+import com.amazonaws.DefaultRequest;
+import com.amazonaws.Request;
 import com.amazonaws.auth.AWS4Signer;
 import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.BasicAWSCredentials;
-import com.amazonaws.DefaultRequest;
-import com.amazonaws.Request;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -27,7 +27,7 @@ import static io.netty.channel.ChannelOption.CONNECT_TIMEOUT_MILLIS;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 @Configuration
-public class RestConsumerConfig {
+public class LambdaInsertProposalConsumerConfig {
 
     private final String url;
     private final int timeout;
@@ -35,11 +35,11 @@ public class RestConsumerConfig {
     private final String secretKey;
     private final String region;
 
-    public RestConsumerConfig(@Value("${adapter.restconsumer.url}") String url,
-                              @Value("${adapter.restconsumer.timeout}") int timeout,
-                              @Value("${aws.accessKeyId}") String accessKey,
-                              @Value("${aws.secretAccessKey}") String secretKey,
-                              @Value("${aws.region}") String region) {
+    public LambdaInsertProposalConsumerConfig(@Value("${adapter.restconsumer.insertproposal.url}") String url,
+                                        @Value("${adapter.restconsumer.timeout}") int timeout,
+                                        @Value("${aws.accessKeyId}") String accessKey,
+                                        @Value("${aws.secretAccessKey}") String secretKey,
+                                        @Value("${aws.region}") String region) {
         this.url = url;
         this.timeout = timeout;
         this.accessKey = accessKey;
@@ -47,7 +47,7 @@ public class RestConsumerConfig {
         this.region = region;
     }
 
-    @Bean(name = "lambdaWebClient")
+    @Bean(name = "lambdaInsertProposalWebClient")
     public WebClient lambdaWebClient(WebClient.Builder builder) {
         return builder
                 .baseUrl(url)

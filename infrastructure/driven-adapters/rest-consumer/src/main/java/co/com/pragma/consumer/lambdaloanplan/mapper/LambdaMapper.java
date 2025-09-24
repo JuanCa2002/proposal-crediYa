@@ -1,8 +1,8 @@
-package co.com.pragma.consumer.mapper;
+package co.com.pragma.consumer.lambdaloanplan.mapper;
 
-import co.com.pragma.consumer.LambdaLoanPlanRequest;
-import co.com.pragma.consumer.LambdaLoanPlanResponse;
-import co.com.pragma.consumer.LoanResponse;
+import co.com.pragma.consumer.lambdaloanplan.dto.LambdaLoanPlanRequest;
+import co.com.pragma.consumer.lambdaloanplan.dto.LambdaLoanPlanResponse;
+import co.com.pragma.consumer.lambdaloanplan.dto.LoanResponse;
 import co.com.pragma.model.loan.Loan;
 import co.com.pragma.model.proposal.Proposal;
 import org.mapstruct.Mapper;

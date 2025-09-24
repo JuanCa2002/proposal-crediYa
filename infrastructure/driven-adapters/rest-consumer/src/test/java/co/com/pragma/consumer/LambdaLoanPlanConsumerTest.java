@@ -1,7 +1,10 @@
 package co.com.pragma.consumer;
 
 
-import co.com.pragma.consumer.mapper.LambdaMapper;
+import co.com.pragma.consumer.lambdaloanplan.LambdaLoanPlanConsumer;
+import co.com.pragma.consumer.lambdaloanplan.dto.LambdaLoanPlanRequest;
+import co.com.pragma.consumer.lambdaloanplan.dto.LambdaLoanPlanResponse;
+import co.com.pragma.consumer.lambdaloanplan.mapper.LambdaMapper;
 import co.com.pragma.model.proposal.Proposal;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
